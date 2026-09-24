@@ -1,5 +1,7 @@
 # Idle gallery comparison · 2026-09-23
 
+Historical baseline: this run used Slint 1.16.0. The project now uses Slint 1.18.1, so these numbers do not describe the current build.
+
 The current comparison uses the 1,000-row `virtual_list` page in both release galleries. The Slint example now matches the GPUI example's event text, one-in-five expanded rows, and 44/28 px row heights. Both windows are 1060 × 760 pixels. The [sampling script](../scripts/compare_idle.py) launched each binary three times, waited five seconds, then collected three one-second-spaced `ps` readings per run. It alternated launch order. [Raw readings](bench-virtual-list-idle-2026-09-23-parity.json) are retained.
 
 | Measure | Slint 1.16.0 | GPUI Omarchy `94705f0` |

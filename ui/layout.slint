@@ -1,5 +1,5 @@
 import { Palette } from "theme.slint";
-import { Label, OmAlignedIcon } from "base.slint";
+import { Label, OmAlignedIcon, OmButton } from "base.slint";
 
 export component OmNavRow inherits Rectangle {
     in property <string> title;
@@ -68,103 +68,35 @@ export component OmAccordionItem inherits Rectangle {
     }
 }
 
-export component OmHorizontalSplit inherits Rectangle {
-    in-out property <length> split-size: 220px;
-    in property <length> minimum-first-size: 140px;
-    in property <length> minimum-second-size: 140px;
-    in property <string> first-title;
-    in property <string> first-line;
-    in property <string> second-line;
-    in property <string> second-title;
-    in property <string> second-description;
-    in property <string> second-hint;
-    in property <string> divider-label: "Resize panels";
-    private property <length> divider-size: 6px;
-    private property <length> maximum-first-size: max(root.minimum-first-size, root.width - root.minimum-second-size - root.divider-size);
-    private property <length> actual-split-size: max(min(root.minimum-first-size, root.width - root.divider-size), min(root.split-size, root.maximum-first-size));
-    width: 700px; height: 300px;
-    border-width: 1px; border-color: Palette.border;
-    Rectangle {
-        x: 0px; y: 0px; width: root.actual-split-size; height: parent.height;
-        background: Palette.foreground.with-alpha(0.04);
-        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-title; color: Palette.bright; }
-        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-line; }
-        Label { x: 14px; y: 74px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-line; }
-    }
-    Rectangle {
-        x: root.actual-split-size + root.divider-size; width: max(0px, parent.width - self.x); height: parent.height;
-        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-title; color: Palette.bright; font-weight: 700; }
-        Text { x: 14px; y: 46px; width: max(0px, parent.width - 28px); height: 48px; text: root.second-description; color: Palette.foreground; font-size: 13px; wrap: word-wrap; }
-        Text { x: 14px; y: 110px; width: max(0px, parent.width - 28px); height: 48px; text: root.second-hint; color: Palette.muted; font-size: 12px; wrap: word-wrap; }
-    }
-    divider := Rectangle {
-        x: root.actual-split-size; width: root.divider-size; height: parent.height;
-        background: divider-touch.has-hover || divider-focus.has-focus ? Palette.accent : Palette.border;
-        forward-focus: divider-focus;
-        accessible-role: slider;
-        accessible-label: root.divider-label;
-        accessible-value: "" + (root.actual-split-size / 1px) + " px";
-        divider-touch := TouchArea {
-            private property <length> start-x;
-            private property <length> start-size;
-            pointer-event(event) => { if (event.kind == PointerEventKind.down) { self.start-x = self.mouse-x; self.start-size = root.split-size; } }
-            moved => { if (self.pressed) { root.split-size = max(root.minimum-first-size, min(root.maximum-first-size, self.start-size + self.mouse-x - self.start-x)); } }
-        }
-        divider-focus := FocusScope {
-            width: 0px;
-            key-pressed(event) => {
-                if (event.text == Key.LeftArrow) { root.split-size = max(root.minimum-first-size, root.actual-split-size - 10px); return accept; }
-                if (event.text == Key.RightArrow) { root.split-size = min(root.maximum-first-size, root.actual-split-size + 10px); return accept; }
-                return reject;
-            }
-        }
-    }
-}
+// A disclosure owns its trigger and content geometry. The caller owns the
+// expanded state and supplies any controls or text shown inside the panel.
+export component OmCollapsible inherits Rectangle {
+    in property <string> title;
+    in-out property <bool> expanded: false;
+    height: disclosure-trigger.height + (root.expanded ? disclosure-panel.height + 14px : 0px);
 
-export component OmVerticalSplit inherits Rectangle {
-    in-out property <length> split-size: 140px;
-    in property <length> minimum-first-size: 80px;
-    in property <length> minimum-second-size: 60px;
-    in property <string> first-title;
-    in property <string> first-line;
-    in property <string> second-title;
-    in property <string> second-line;
-    in property <string> divider-label: "Resize panels";
-    private property <length> divider-size: 6px;
-    private property <length> maximum-first-size: max(root.minimum-first-size, root.height - root.minimum-second-size - root.divider-size);
-    private property <length> actual-split-size: max(min(root.minimum-first-size, root.height - root.divider-size), min(root.split-size, root.maximum-first-size));
-    width: 700px; height: 240px;
-    border-width: 1px; border-color: Palette.border;
-    Rectangle {
-        x: 0px; y: 0px; height: root.actual-split-size; width: parent.width;
-        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-title; color: Palette.bright; }
-        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-line; }
+    disclosure-trigger := OmButton {
+        x: 0px;
+        y: 0px;
+        label: root.title;
+        leading-icon: root.expanded ? "down" : "right";
+        outline: true;
+        clicked => { root.expanded = !root.expanded; }
     }
-    Rectangle {
-        y: root.actual-split-size + root.divider-size; height: max(0px, parent.height - self.y); width: parent.width;
-        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-title; color: Palette.bright; }
-        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-line; color: Palette.muted; }
-    }
-    divider := Rectangle {
-        y: root.actual-split-size; height: root.divider-size; width: parent.width;
-        background: divider-touch.has-hover || divider-focus.has-focus ? Palette.accent : Palette.border;
-        forward-focus: divider-focus;
-        accessible-role: slider;
-        accessible-label: root.divider-label;
-        accessible-value: "" + (root.actual-split-size / 1px) + " px";
-        divider-touch := TouchArea {
-            private property <length> start-y;
-            private property <length> start-size;
-            pointer-event(event) => { if (event.kind == PointerEventKind.down) { self.start-y = self.mouse-y; self.start-size = root.split-size; } }
-            moved => { if (self.pressed) { root.split-size = max(root.minimum-first-size, min(root.maximum-first-size, self.start-size + self.mouse-y - self.start-y)); } }
-        }
-        divider-focus := FocusScope {
-            width: 0px;
-            key-pressed(event) => {
-                if (event.text == Key.UpArrow) { root.split-size = max(root.minimum-first-size, root.actual-split-size - 10px); return accept; }
-                if (event.text == Key.DownArrow) { root.split-size = min(root.maximum-first-size, root.actual-split-size + 10px); return accept; }
-                return reject;
-            }
+    disclosure-panel := Rectangle {
+        x: 0px;
+        y: disclosure-trigger.height + 14px;
+        width: parent.width;
+        height: root.expanded ? disclosure-content.preferred-height + 28px : 0px;
+        visible: root.expanded;
+        background: Palette.foreground.with-alpha(0.04);
+        disclosure-content := VerticalLayout {
+            x: 14px;
+            y: 14px;
+            width: parent.width - 28px;
+            height: self.preferred-height;
+            spacing: 12px;
+            @children
         }
     }
 }

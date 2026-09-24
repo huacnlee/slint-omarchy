@@ -241,6 +241,13 @@ fn main() -> Result<(), slint::PlatformError> {
             Some((x.parse::<f32>().ok()?, y.parse::<f32>().ok()?))
         })
         .collect::<Vec<_>>();
+    let snapshot_hovers = std::env::args()
+        .skip(1)
+        .filter_map(|arg| {
+            let (x, y) = arg.strip_prefix("--hover=")?.split_once(',')?;
+            Some((x.parse::<f32>().ok()?, y.parse::<f32>().ok()?))
+        })
+        .collect::<Vec<_>>();
     let snapshot_drags = std::env::args()
         .skip(1)
         .filter_map(|arg| {
@@ -753,6 +760,7 @@ fn main() -> Result<(), slint::PlatformError> {
             &app,
             &path,
             &snapshot_clicks,
+            &snapshot_hovers,
             &snapshot_drags,
             snapshot_text.as_deref(),
             &snapshot_keys,

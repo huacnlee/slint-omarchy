@@ -1,5 +1,6 @@
 import { ListView, ScrollView } from "std-widgets.slint";
-import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmWorkspaceForm, OmResetDialogForm, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmHorizontalSplit, OmVerticalSplit, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, ActivityItem, OmActivityList, ProjectRow, TreeRow, OmTable, OmTree, OmColorPicker, OmTextView, OmToast, OmSheet, OmSheetTrigger, OmTitleBar } from "omarchy.slint";
+import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmCollapsible, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, ActivityItem, OmActivityList, ProjectRow, TreeRow, OmTable, OmTree, OmColorPicker, OmTextView, OmToast, OmSheet, OmSheetTrigger, OmTitleBar } from "omarchy.slint";
+import { OmWorkspaceForm, OmResetDialogForm, OmHorizontalSplit, OmVerticalSplit } from "gallery_examples.slint";
 export { Palette } from "omarchy.slint";
 
 export struct NavItem { name: string, label: string, description: string, category: string, implemented: bool }
@@ -102,7 +103,7 @@ export component Gallery inherits Window {
     in-out property <bool> toast-error-open: false;
     in-out property <bool> toast-saved: false;
     in-out property <bool> workspace-created: false;
-    out property <bool> toast-paused: success-toast.paused || error-toast.paused;
+    out property <bool> toast-paused: success-toast.paused;
     in-out property <string> toast-message: "Workspace saved";
     callback reload-theme;
     callback set-zoom(int);
@@ -199,10 +200,12 @@ export component Gallery inherits Window {
                     Text { text: "EXPLORE"; color: Palette.muted; font-size: 11px; font-weight: 700; x: 18px; height: 30px; }
                     Rectangle {
                         sidebar-scroll := ScrollView {
+                            x: 0px;
+                            y: 0px;
                             width: parent.width - 10px;
                             vertical-scrollbar-policy: ScrollBarPolicy.always-off;
                             horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
-                            viewport-width: self.width;
+                            content-width: self.width;
                             VerticalLayout {
                                 spacing: 2px;
                                 for item[i] in root.pages : Rectangle {
@@ -224,8 +227,8 @@ export component Gallery inherits Window {
                         OmScrollbar {
                             x: parent.width - self.width;
                             height: parent.height;
-                            viewport-y <=> sidebar-scroll.viewport-y;
-                            content-height: sidebar-scroll.viewport-height;
+                            viewport-y <=> sidebar-scroll.content-y;
+                            content-height: sidebar-scroll.content-height;
                             page-height: sidebar-scroll.visible-height;
                         }
                     }
@@ -241,10 +244,12 @@ export component Gallery inherits Window {
                     Rectangle { height: 1px; background: Palette.border; }
                     Rectangle {
                         content-scroll := ScrollView {
+                            x: 0px;
+                            y: 0px;
                             width: parent.width - 10px;
                             vertical-scrollbar-policy: ScrollBarPolicy.always-off;
                             horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
-                            viewport-width: self.width;
+                            content-width: self.width;
                             VerticalLayout {
                             spacing: 16px;
                             if root.current-page == "overview" : Card {
@@ -645,16 +650,12 @@ export component Gallery inherits Window {
                             }
                             if root.current-page == "collapsible" : Card {
                                 heading: "Collapsible";
-                                OmButton { label: "Advanced settings"; leading-icon: root.collapse-open ? "down" : "right"; outline: true; clicked => { root.collapse-open = !root.collapse-open; } }
-                                if root.collapse-open : Rectangle {
-                                    height: 132px; background: Palette.foreground.with-alpha(0.04);
-                                    VerticalLayout {
-                                        alignment: start;
-                                        x: 14px; y: 14px; width: parent.width - 28px; height: parent.height - 28px; spacing: 12px;
-                                        Label { text: "Workspace synchronization"; color: Palette.bright; }
-                                        OmSwitch { label: "Sync workspace"; checked <=> root.enabled; }
-                                        Label { text: "Your selection is preserved when this section is collapsed."; color: Palette.muted; }
-                                    }
+                                OmCollapsible {
+                                    title: "Advanced settings";
+                                    expanded <=> root.collapse-open;
+                                    Label { text: "Workspace synchronization"; color: Palette.bright; }
+                                    OmSwitch { label: "Sync workspace"; checked <=> root.enabled; }
+                                    Label { text: "Your selection is preserved when this section is collapsed."; color: Palette.muted; }
                                 }
                             }
                             if root.current-page == "dialog" || root.current-page == "alert_dialog" : Card {
@@ -901,8 +902,8 @@ export component Gallery inherits Window {
                         OmScrollbar {
                             x: parent.width - self.width;
                             height: parent.height;
-                            viewport-y <=> content-scroll.viewport-y;
-                            content-height: content-scroll.viewport-height;
+                            viewport-y <=> content-scroll.content-y;
+                            content-height: content-scroll.content-height;
                             page-height: content-scroll.visible-height;
                         }
                     }
@@ -981,7 +982,7 @@ export component Gallery inherits Window {
         action-label: root.toast-message == "Workspace saved" ? "Undo" : "Dismiss";
         x: parent.width - self.width - 14px;
         y: parent.height - self.height - (root.toast-error-open ? 140px : 48px);
-        pause-changed(paused) => { root.toast-pause-changed(root.toast-paused); }
+        pause-changed(paused) => { root.toast-pause-changed(paused); }
         dismissed => { root.dismiss-toast-timer(); }
         action => {
             if (root.toast-message == "Workspace saved") {
@@ -1001,7 +1002,6 @@ export component Gallery inherits Window {
         action-label: "Retry";
         x: parent.width - self.width - 14px;
         y: parent.height - self.height - 48px;
-        pause-changed(paused) => { root.toast-pause-changed(root.toast-paused); }
         action => {
             root.toast-error-open = false;
             root.toast-saved = true;

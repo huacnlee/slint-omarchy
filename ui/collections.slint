@@ -17,13 +17,15 @@ export component OmActivityList inherits Rectangle {
 
     scroll-to-first => { root.viewport-y = 0px; }
     scroll-to-last => {
-        root.viewport-y = min(0px, activity-list.visible-height - activity-list.viewport-height);
+        root.viewport-y = min(0px, activity-list.visible-height - activity-list.content-height);
     }
 
     activity-list := ListView {
+        x: 0px;
+        y: 0px;
         width: parent.width - scrollbar.width - 2px;
         height: parent.height;
-        viewport-y <=> root.viewport-y;
+        content-y <=> root.viewport-y;
         vertical-scrollbar-policy: ScrollBarPolicy.always-off;
         horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
 
@@ -54,7 +56,7 @@ export component OmActivityList inherits Rectangle {
         x: parent.width - self.width;
         height: parent.height;
         viewport-y <=> root.viewport-y;
-        content-height: activity-list.viewport-height;
+        content-height: activity-list.content-height;
         page-height: activity-list.visible-height;
     }
 }

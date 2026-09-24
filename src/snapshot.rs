@@ -32,6 +32,7 @@ pub fn save(
     app: &Gallery,
     path: &Path,
     clicks: &[(f32, f32)],
+    hovers: &[(f32, f32)],
     drags: &[(f32, f32, f32, f32)],
     typed: Option<&str>,
     keys: &[String],
@@ -57,6 +58,15 @@ pub fn save(
             window.dispatch_event(WindowEvent::PointerReleased {
                 position,
                 button: PointerEventButton::Left,
+            });
+            window.request_redraw();
+            window.draw_if_needed(|renderer| {
+                renderer.render(&mut pixels, width);
+            });
+        }
+        for &(x, y) in hovers {
+            window.dispatch_event(WindowEvent::PointerMoved {
+                position: LogicalPosition { x, y },
             });
             window.request_redraw();
             window.draw_if_needed(|renderer| {

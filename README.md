@@ -28,6 +28,8 @@ export component Settings inherits Window {
 }
 ```
 
+The [UI architecture](docs/architecture.md) explains the public control boundary, state ownership, and layout contract. Gallery-specific forms and sample split panes stay in `ui/gallery_examples.slint`.
+
 [`examples/reuse.rs`](examples/reuse.rs) is a standalone window that imports the component library. Verify the public Slint API with `cargo check --example reuse`.
 
 The host supplies models and handles callbacks for controls such as `OmTable`, `OmTree`, `OmColorPicker`, `OmToast`, and `OmTitleBar`. The gallery in [`ui/gallery.slint`](ui/gallery.slint) shows those bindings in context.
@@ -44,7 +46,7 @@ The software renderer can capture a preview without opening a desktop window. Fo
 cargo run -- --page=accordion --click=350,250 --snapshot=/tmp/slint-accordion.png
 ```
 
-Repeat `--click=x,y` to exercise a sequence, or use `--drag=x1,y1,x2,y2`, `--type=text`, `--key=Down`/`--key=Return`, and `--wait-ms=6200` for pointer, typing, keyboard, and timer checks. The default capture canvas is 1060 × 760 pixels. Use `--snapshot-size=680x760` to inspect the minimum-width layout.
+Repeat `--click=x,y` to exercise a sequence, or use `--hover=x,y`, `--drag=x1,y1,x2,y2`, `--type=text`, `--key=Down`/`--key=Return`, and `--wait-ms=6200` for pointer, typing, keyboard, and timer checks. The default capture canvas is 1060 × 760 pixels. Use `--snapshot-size=680x760` to inspect the minimum-width layout.
 
 Slint's built-in performance overlay can be enabled with `SLINT_DEBUG_PERFORMANCE=refresh_full_speed,overlay` for manual frame inspection. Both desktop galleries now open at 1060 × 760 pixels. To compare stable idle process memory and CPU on the same page, build both release binaries and run:
 
