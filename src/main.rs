@@ -753,6 +753,36 @@ fn main() -> Result<(), slint::PlatformError> {
             app.set_current_page_description(page_description(name).into());
             app.set_current_implemented(IMPLEMENTED.contains(&name));
             app.set_status(format!("Viewing {}", display_name(name)).into());
+
+            // Keep keyboard selection inside the sidebar viewport. The first
+            // group header is 30px; later groups add 38px. Rows are 32px with
+            // a 2px gap, matching the gallery's navigation layout.
+            let mut first_in_group = 0;
+            let mut group_index = 0;
+            for (index, (_, names)) in GROUPS.iter().enumerate() {
+                if next < first_in_group + names.len() {
+                    group_index = index;
+                    break;
+                }
+                first_in_group += names.len();
+            }
+            let row_top = 30.0 + 34.0 * next as f32 + 38.0 * group_index as f32;
+            let row_bottom = row_top + 32.0;
+            let visible_height = app.get_nav_visible_height();
+            if visible_height > 0.0 {
+                let viewport_top = -app.get_nav_scroll_y();
+                let viewport_bottom = viewport_top + visible_height;
+                let next_top = if next == 0 {
+                    0.0
+                } else if row_top < viewport_top {
+                    row_top
+                } else if row_bottom > viewport_bottom {
+                    row_bottom - visible_height
+                } else {
+                    viewport_top
+                };
+                app.set_nav_scroll_y(-next_top.max(0.0));
+            }
         }
     });
     if let Some(path) = snapshot_path {

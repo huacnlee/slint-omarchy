@@ -1,3 +1,4 @@
+import { ScrollView } from "std-widgets.slint";
 import { Palette } from "theme.slint";
 import { OmButton } from "base.slint";
 
@@ -82,36 +83,115 @@ export component OmTabs inherits Rectangle {
 export component OmPagination inherits Rectangle {
     in-out property <int> page: 1;
     in property <int> page-count: 1;
+    in property <string> accessible-name: "Pagination";
     callback changed(int);
     callback select-page(int);
+    private property <int> total: max(1, root.page-count);
+    private property <int> current: max(1, min(root.total, root.page));
+    private property <int> first-middle: root.current <= 2 ? 2 : root.current >= root.total - 1 ? root.total - 2 : root.current - 1;
+    private property <int> last-middle: root.current <= 2 ? 3 : root.current >= root.total - 1 ? root.total - 1 : root.current + 1;
+    private property <length> popup-anchor-x: 0px;
     select-page(target) => {
-        if (target >= 1 && target <= root.page-count && target != root.page) {
+        if (target >= 1 && target <= root.total && target != root.current) {
             root.page = target;
             root.changed(target);
         }
+        left-popup.close();
+        right-popup.close();
         page-focus.focus();
     }
     width: pagination-layout.preferred-width;
     height: 32px;
     forward-focus: page-focus;
+    accessible-role: navigation;
+    accessible-label: root.accessible-name;
     pagination-layout := HorizontalLayout {
         spacing: 4px;
-        OmButton { label: "Previous page"; icon-name: "left"; width: 40px; disabled: root.page <= 1; clicked => { root.select-page(root.page - 1); } }
-        for index in root.page-count : OmButton {
-            label: "" + (index + 1);
-            width: 40px;
-            selected: root.page == index + 1;
-            clicked => { root.select-page(index + 1); }
+        OmButton { label: "Previous page"; icon-name: "left"; width: 32px; disabled: root.current <= 1; clicked => { root.select-page(root.current - 1); } }
+        if root.total > 1 : OmButton { label: "1"; width: 32px; selected: root.current == 1; clicked => { root.select-page(1); } }
+        if root.total <= 5 : HorizontalLayout {
+            spacing: 4px;
+            for index in max(0, root.total - 2) : OmButton {
+                label: "" + (index + 2);
+                width: 32px;
+                selected: root.current == index + 2;
+                clicked => { root.select-page(index + 2); }
+            }
         }
-        OmButton { label: "Next page"; icon-name: "right"; width: 40px; disabled: root.page >= root.page-count; clicked => { root.select-page(root.page + 1); } }
+        if root.total > 5 && root.first-middle > 2 : OmButton {
+            label: "More previous pages";
+            icon-name: "ellipsis";
+            width: 24px;
+            clicked => { root.popup-anchor-x = self.x; left-popup.show(); }
+        }
+        if root.total > 5 : HorizontalLayout {
+            spacing: 4px;
+            for slot in 3 : OmButton {
+                visible: root.first-middle + slot <= root.last-middle;
+                label: "" + (root.first-middle + slot);
+                width: 32px;
+                selected: root.current == root.first-middle + slot;
+                clicked => { root.select-page(root.first-middle + slot); }
+            }
+        }
+        if root.total > 5 && root.last-middle < root.total - 1 : OmButton {
+            label: "More next pages";
+            icon-name: "ellipsis";
+            width: 24px;
+            clicked => { root.popup-anchor-x = self.x; right-popup.show(); }
+        }
+        if root.total > 1 : OmButton { label: "" + root.total; width: 32px; selected: root.current == root.total; clicked => { root.select-page(root.total); } }
+        OmButton { label: "Next page"; icon-name: "right"; width: 32px; disabled: root.current >= root.total; clicked => { root.select-page(root.current + 1); } }
+    }
+    left-popup := PopupWindow {
+        x: root.popup-anchor-x; y: root.height + 4px;
+        width: 76px; height: min(240px, max(1, root.first-middle - 2) * 28px + 12px);
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            ScrollView {
+                x: 0px; y: 0px; width: parent.width; height: parent.height;
+                horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+                VerticalLayout {
+                    padding: 6px; spacing: 0px;
+                    for index in max(0, root.first-middle - 2) : OmButton {
+                        label: "" + (index + 2);
+                        width: 62px; height: 28px;
+                        clicked => { root.select-page(index + 2); }
+                    }
+                }
+            }
+        }
+    }
+    right-popup := PopupWindow {
+        x: root.popup-anchor-x; y: root.height + 4px;
+        width: 76px; height: min(240px, max(1, root.total - root.last-middle - 1) * 28px + 12px);
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            ScrollView {
+                x: 0px; y: 0px; width: parent.width; height: parent.height;
+                horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+                VerticalLayout {
+                    padding: 6px; spacing: 0px;
+                    for index in max(0, root.total - root.last-middle - 1) : OmButton {
+                        label: "" + (root.last-middle + index + 1);
+                        width: 62px; height: 28px;
+                        clicked => { root.select-page(root.last-middle + index + 1); }
+                    }
+                }
+            }
+        }
     }
     page-focus := FocusScope {
         width: 0px;
         key-pressed(event) => {
-            if (event.text == Key.LeftArrow) { root.select-page(root.page - 1); return accept; }
-            if (event.text == Key.RightArrow) { root.select-page(root.page + 1); return accept; }
+            if (event.text == Key.LeftArrow) { root.select-page(root.current - 1); return accept; }
+            if (event.text == Key.RightArrow) { root.select-page(root.current + 1); return accept; }
             if (event.text == Key.Home) { root.select-page(1); return accept; }
-            if (event.text == Key.End) { root.select-page(root.page-count); return accept; }
+            if (event.text == Key.End) { root.select-page(root.total); return accept; }
             return reject;
         }
     }

@@ -18,11 +18,8 @@ export component OmIconRow inherits Rectangle {
     in property <color> icon-tone: Palette.foreground;
     width: 320px;
     height: 28px;
-    HorizontalLayout {
-        spacing: 10px;
-        OmAlignedIcon { glyph: root.glyph; tone: root.icon-tone; }
-        Label { text: root.label; }
-    }
+    OmAlignedIcon { x: 0px; y: (parent.height - self.height) / 2; glyph: root.glyph; tone: root.icon-tone; }
+    Label { x: 26px; y: 0px; width: parent.width - 26px; height: parent.height; text: root.label; }
 }
 
 export component OmBadge inherits Rectangle {
@@ -49,11 +46,8 @@ export component OmAlert inherits Rectangle {
     background: tone.with-alpha(0.06);
     border-width: 1px;
     border-color: tone.with-alpha(0.35);
-    HorizontalLayout {
-        padding-left: 10px; padding-right: 10px; spacing: 10px;
-        OmAlignedIcon { show: !root.neutral; glyph: root.icon; tone: root.tone; }
-        Label { text: root.message; color: root.tone; horizontal-alignment: left; }
-    }
+    OmAlignedIcon { x: 10px; y: (parent.height - self.height) / 2; show: !root.neutral; glyph: root.icon; tone: root.tone; }
+    Label { x: 36px; y: 0px; width: parent.width - 46px; height: parent.height; text: root.message; color: root.tone; horizontal-alignment: left; }
 }
 
 export component OmKeycap inherits Rectangle {

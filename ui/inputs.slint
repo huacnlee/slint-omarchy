@@ -59,6 +59,8 @@ export component OmInput inherits Rectangle {
         read-only: root.read-only;
         single-line: true;
         color: Palette.foreground;
+        font-family: "monospace";
+        font-size: 13px;
         horizontal-alignment: left;
         vertical-alignment: center;
         selection-background-color: Palette.foreground.with-alpha(0.35);
@@ -127,6 +129,8 @@ export component OmTextarea inherits Rectangle {
         single-line: false;
         wrap: word-wrap;
         color: Palette.foreground;
+        font-family: "monospace";
+        font-size: 13px;
         horizontal-alignment: left;
         vertical-alignment: top;
         selection-background-color: Palette.foreground.with-alpha(0.35);

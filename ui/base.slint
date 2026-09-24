@@ -12,7 +12,8 @@ export component OmAlignedIcon inherits Rectangle {
     in property <color> tone: Palette.muted;
     in property <bool> show: true;
     width: 16px;
-    if root.show : Image { x: 0px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.glyph; colorize: root.tone; }
+    height: 16px;
+    if root.show : Image { x: 0px; y: 0px; width: 16px; height: 16px; source: root.glyph; colorize: root.tone; }
 }
 
 export component OmButton inherits Rectangle {
@@ -49,14 +50,14 @@ export component OmButton inherits Rectangle {
         text: root.icon-name == "" ? root.label : "";
         horizontal-alignment: root.text-left ? left : center;
         color: root.danger ? Palette.danger : root.primary ? Palette.accent : Palette.foreground;
-        x: root.leading-icon == "" ? 10px : 30px;
-        width: parent.width - (root.show-swatch || root.chevron || root.trailing-icon != "" ? 36px : 20px) - (root.leading-icon == "" ? 0px : 20px);
+        x: root.text-left ? (root.leading-icon == "" ? 10px : 34px) : root.leading-icon != "" ? (parent.width - (self.preferred-width + 24px)) / 2 + 24px : root.show-swatch || root.chevron || root.trailing-icon != "" ? (parent.width - (self.preferred-width + 24px)) / 2 : (parent.width - self.preferred-width) / 2;
+        width: root.text-left ? parent.width - (root.show-swatch || root.chevron || root.trailing-icon != "" ? 36px : 20px) - (root.leading-icon == "" ? 0px : 24px) : self.preferred-width;
         height: parent.height;
     }
-    if root.chevron || root.trailing-icon != "" : Image { x: parent.width - 25px; y: 8px; width: 16px; height: 16px; source: root.trailing-icon == "calendar" ? @image-url("../assets/icons/calendar.svg") : @image-url("../assets/icons/chevron-down.svg"); colorize: Palette.muted; }
-    if root.show-swatch : Rectangle { x: parent.width - 26px; y: 8px; width: 16px; height: 16px; background: root.swatch-color; border-width: 1px; border-color: Palette.border; }
-    if root.icon-name != "" : Image { x: (parent.width - 16px) / 2; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.icon-name == "left" ? @image-url("../assets/icons/chevron-left.svg") : root.icon-name == "right" ? @image-url("../assets/icons/chevron-right.svg") : root.icon-name == "minimize" ? @image-url("../assets/icons/minus.svg") : root.icon-name == "maximize" ? @image-url("../assets/icons/square.svg") : root.icon-name == "plus" ? @image-url("../assets/icons/plus.svg") : @image-url("../assets/icons/x.svg"); colorize: root.disabled ? Palette.muted : Palette.foreground; }
-    if root.leading-icon != "" : Image { x: 10px; y: 8px; width: 16px; height: 16px; source: root.leading-icon == "down" ? @image-url("../assets/icons/chevron-down.svg") : root.leading-icon == "right" ? @image-url("../assets/icons/chevron-right.svg") : root.leading-icon == "plus" ? @image-url("../assets/icons/plus.svg") : @image-url("../assets/icons/check.svg"); colorize: Palette.foreground; }
+    if root.chevron || root.trailing-icon != "" : Image { x: root.text-left ? parent.width - 26px : caption.x + caption.width + 8px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.trailing-icon == "calendar" ? @image-url("../assets/icons/calendar.svg") : @image-url("../assets/icons/chevron-down.svg"); colorize: Palette.muted; }
+    if root.show-swatch : Rectangle { x: root.text-left ? parent.width - 26px : caption.x + caption.width + 8px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; background: root.swatch-color; border-width: 1px; border-color: Palette.border; }
+    if root.icon-name != "" : Image { x: (parent.width - 16px) / 2; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.icon-name == "left" ? @image-url("../assets/icons/chevron-left.svg") : root.icon-name == "right" ? @image-url("../assets/icons/chevron-right.svg") : root.icon-name == "minimize" ? @image-url("../assets/icons/minus.svg") : root.icon-name == "maximize" ? @image-url("../assets/icons/square.svg") : root.icon-name == "plus" ? @image-url("../assets/icons/plus.svg") : root.icon-name == "ellipsis" ? @image-url("../assets/icons/ellipsis.svg") : @image-url("../assets/icons/x.svg"); colorize: root.disabled ? Palette.muted : Palette.foreground; }
+    if root.leading-icon != "" : Image { x: root.text-left ? 10px : caption.x - 24px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.leading-icon == "down" ? @image-url("../assets/icons/chevron-down.svg") : root.leading-icon == "right" ? @image-url("../assets/icons/chevron-right.svg") : root.leading-icon == "plus" ? @image-url("../assets/icons/plus.svg") : @image-url("../assets/icons/check.svg"); colorize: Palette.foreground; }
     touch := TouchArea {
         clicked => { if (!root.disabled) { root.clicked(); } }
     }

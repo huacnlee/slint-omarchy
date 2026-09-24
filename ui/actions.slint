@@ -24,7 +24,7 @@ export component OmLink inherits Rectangle {
         color: link-touch.has-hover && !root.disabled ? Palette.bright : Palette.accent;
     }
     Rectangle {
-        x: 4px; y: 23px; width: parent.width - 8px; height: 1px;
+        x: 4px; y: parent.height - 7px; width: parent.width - 8px; height: 1px;
         background: root.disabled ? Palette.muted : link-touch.has-hover ? Palette.bright : Palette.accent;
     }
     link-touch := TouchArea { clicked => { if (!root.disabled) { root.activated(); } } }
@@ -54,12 +54,12 @@ export component OmMenuItem inherits Rectangle {
     accessible-enabled: !root.disabled;
     accessible-action-default => { if (!root.disabled) { root.activated(); } }
     if root.icon-name != "" : Image {
-        x: 10px; y: 8px; width: 16px; height: 16px;
+        x: 10px; y: (parent.height - 16px) / 2; width: 16px; height: 16px;
         source: root.icon-name == "plus" ? @image-url("../assets/icons/plus.svg") : @image-url("../assets/icons/star.svg");
         colorize: Palette.foreground;
     }
-    Label { x: root.icon-name != "" ? 34px : 10px; width: parent.width - (root.icon-name != "" ? 44px : 20px); height: parent.height; text: root.label; }
-    if root.submenu : Image { x: parent.width - 24px; y: 8px; width: 16px; height: 16px; source: @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
+    Label { x: root.icon-name != "" ? 34px : 10px; width: parent.width - (root.icon-name != "" ? 44px : 20px) - (root.submenu ? 24px : 0px); height: parent.height; text: root.label; }
+    if root.submenu : Image { x: parent.width - 24px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
     item-touch := TouchArea {
         clicked => { if (!root.disabled) { root.activated(); } }
         changed has-hover => { if (self.has-hover && !root.disabled) { root.hovered(); } }
@@ -193,7 +193,7 @@ export component OmToggle inherits Rectangle {
     accessible-checked: root.pressed;
     accessible-action-default => { root.pressed = !root.pressed; root.toggled(); }
     caption := Label { x: 10px; width: parent.width - (root.star ? 42px : 20px); height: parent.height; text: root.label; }
-    if root.star : Image { x: parent.width - 26px; y: 8px; width: 16px; height: 16px; source: @image-url("../assets/icons/star.svg"); colorize: root.pressed ? Palette.accent : Palette.foreground; }
+    if root.star : Image { x: parent.width - 26px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: @image-url("../assets/icons/star.svg"); colorize: root.pressed ? Palette.accent : Palette.foreground; }
     toggle-touch := TouchArea { clicked => { root.pressed = !root.pressed; root.toggled(); toggle-focus.focus(); } }
     toggle-focus := FocusScope {
         width: 0px;

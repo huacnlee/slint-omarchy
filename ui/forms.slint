@@ -22,14 +22,15 @@ export component OmCheckBox inherits Rectangle {
     accessible-enabled: !root.disabled;
     accessible-action-default => { if (!root.disabled) { root.checked = root.mixed || !root.checked; root.mixed = false; root.toggled(); } }
     row := HorizontalLayout {
-        padding-left: 0px;
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        padding-left: 4px; padding-right: 4px;
         spacing: 8px;
         Rectangle {
             width: 16px;
             Rectangle {
                 y: (parent.height - 16px) / 2; width: 16px; height: 16px;
                 background: root.checked || root.mixed ? Palette.foreground.with-alpha(0.18) : Palette.foreground.with-alpha(0.04);
-                border-width: 1px; border-color: check-focus.has-focus ? Palette.accent : Palette.foreground.with-alpha(0.4);
+                border-width: 1px; border-color: root.checked || root.mixed ? transparent : check-focus.has-focus ? Palette.accent : Palette.foreground.with-alpha(0.4);
                 if root.checked || root.mixed : Image { x: 1px; y: 1px; width: 14px; height: 14px; source: root.mixed ? @image-url("../assets/icons/minus.svg") : @image-url("../assets/icons/check.svg"); colorize: Palette.foreground; }
             }
         }
@@ -63,14 +64,16 @@ export component OmSwitch inherits Rectangle {
     accessible-checked: root.checked;
     accessible-action-default => { root.checked = !root.checked; root.toggled(); }
     switch-row := HorizontalLayout {
-        spacing: 12px;
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        padding-left: 5px; padding-right: 5px;
+        spacing: 8px;
         Rectangle {
             width: 42px;
             Rectangle {
                 y: (parent.height - 22px) / 2; width: 42px; height: 22px;
                 background: root.checked ? Palette.foreground.with-alpha(0.18) : Palette.foreground.with-alpha(0.04);
                 border-width: 1px;
-                border-color: switch-focus.has-focus ? Palette.accent : Palette.foreground.with-alpha(0.4);
+                border-color: root.checked ? transparent : switch-focus.has-focus ? Palette.accent : Palette.foreground.with-alpha(0.4);
                 Rectangle { width: 16px; height: 16px; x: root.checked ? parent.width - self.width - 3px : 3px; y: (parent.height - self.height) / 2; background: root.checked ? Palette.foreground : Palette.muted; }
             }
         }
@@ -95,20 +98,22 @@ export component OmRadioGroup inherits Rectangle {
     height: root.options.length * 32px;
     forward-focus: radio-focus;
     for option[index] in root.options : Rectangle {
+        x: 0px; width: parent.width;
         y: index * 32px;
         height: 30px;
         background: (radio-touch.has-hover || (radio-focus.has-focus && root.choice == index)) ? Palette.foreground.with-alpha(0.08) : transparent;
         HorizontalLayout {
-            padding-left: 6px;
+            x: 0px; y: 0px; width: parent.width; height: parent.height;
+            padding-left: 4px; padding-right: 4px;
             spacing: 8px;
             Rectangle {
                 width: 16px;
                 Rectangle {
                     y: (parent.height - 16px) / 2; width: 16px; height: 16px;
                     border-width: 1px;
-                    border-color: root.choice == index ? Palette.accent : Palette.foreground.with-alpha(0.4);
-                    background: root.choice == index ? Palette.foreground.with-alpha(0.18) : transparent;
-                    Rectangle { width: 6px; height: 6px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; background: root.choice == index ? Palette.accent : transparent; }
+                    border-color: Palette.foreground.with-alpha(0.4);
+                    background: transparent;
+                    Rectangle { width: 8px; height: 8px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; background: root.choice == index ? Palette.foreground : transparent; }
                 }
             }
             Label { text: option; }
@@ -220,6 +225,10 @@ export component OmChoice inherits Rectangle {
                         x: 8px; y: 5px; width: parent.width - 16px; height: parent.height - 10px;
                         text <=> root.filter-text;
                         color: Palette.foreground;
+                        font-family: "monospace";
+                        font-size: 13px;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
                         selection-background-color: Palette.foreground.with-alpha(0.35);
                         edited => {
                             root.search(self.text);
@@ -372,11 +381,11 @@ export component OmSlider inherits Rectangle {
     track := Rectangle {
         x: 8px; y: 12px; width: parent.width - 16px; height: 4px;
         background: Palette.border;
-        Rectangle { x: 0px; width: parent.width * root.value / 100; height: parent.height; background: Palette.accent; }
+        Rectangle { x: 0px; width: parent.width * min(100, max(0, root.value)) / 100; height: parent.height; background: Palette.accent; }
     }
     Rectangle {
         width: 16px; height: 16px;
-        x: 8px + (parent.width - 16px) * root.value / 100 - 8px;
+        x: 8px + (parent.width - 16px) * min(100, max(0, root.value)) / 100 - 8px;
         y: 6px;
         background: slider-focus.has-focus ? Palette.accent : Palette.background;
         border-width: 2px;
@@ -384,15 +393,15 @@ export component OmSlider inherits Rectangle {
     }
     slider-touch := TouchArea {
         enabled: !root.disabled;
-        clicked => { slider-focus.focus(); root.value = min(100, max(0, Math.round((self.mouse-x - 8px) * 100 / (self.width - 16px) / root.step) * root.step)); root.adjusted(root.value); }
-        moved => { if (self.pressed) { root.value = min(100, max(0, Math.round((self.mouse-x - 8px) * 100 / (self.width - 16px) / root.step) * root.step)); root.adjusted(root.value); } }
+        clicked => { slider-focus.focus(); root.value = min(100, max(0, Math.round((self.mouse-x - 8px) * 100 / (self.width - 16px) / max(1, root.step)) * max(1, root.step))); root.adjusted(root.value); }
+        moved => { if (self.pressed) { root.value = min(100, max(0, Math.round((self.mouse-x - 8px) * 100 / (self.width - 16px) / max(1, root.step)) * max(1, root.step))); root.adjusted(root.value); } }
     }
     slider-focus := FocusScope {
         width: 0px;
         enabled: !root.disabled;
         key-pressed(event) => {
-            if (event.text == Key.LeftArrow || event.text == Key.DownArrow || event.text == "h") { root.value = max(0, root.value - root.step); root.adjusted(root.value); return accept; }
-            if (event.text == Key.RightArrow || event.text == Key.UpArrow || event.text == "l") { root.value = min(100, root.value + root.step); root.adjusted(root.value); return accept; }
+            if (event.text == Key.LeftArrow || event.text == Key.DownArrow || event.text == "h") { root.value = max(0, root.value - max(1, root.step)); root.adjusted(root.value); return accept; }
+            if (event.text == Key.RightArrow || event.text == Key.UpArrow || event.text == "l") { root.value = min(100, root.value + max(1, root.step)); root.adjusted(root.value); return accept; }
             if (event.text == Key.Home) { root.value = 0; root.adjusted(root.value); return accept; }
             if (event.text == Key.End) { root.value = 100; root.adjusted(root.value); return accept; }
             return reject;

@@ -58,7 +58,7 @@ python3 scripts/compare_idle.py --page virtual_list --runs 3
 
 The script launches the binaries directly, forces Slint's `winit-femtovg` renderer, waits for them to settle, samples each process with `ps`, and reports median resident memory. GPUI uses Metal, so these are end-to-end application figures with different rendering stacks. The script does not measure frame rate, scrolling latency, or startup time. Keep display scale, theme, power mode, and background load the same for both runs.
 
-The [idle comparison](docs/performance.md) records three-run `virtual_list` results for matched event content and row heights, along with its limits. The list's First event and Last event buttons let you inspect the two ends without a long manual scroll.
+The [idle comparison](docs/performance.md) records three-run `virtual_list` results for Slint 1.18.1 and GPUI, with the raw readings and measurement limits. The list's First event and Last event buttons let you inspect the two ends without a long manual scroll.
 
 The sidebar includes previews for 46 reference entries. Dock and OTP input are deferred because their current implementations are incomplete. Some previews cover fewer states than their GPUI counterparts. Use Up/Down, `j`/`k`, or Home/End while the sidebar has focus. Tab reaches buttons and fields. The frameless title bar supports native window dragging, resizing, close, minimize, and maximize controls. Its zoom buttons adjust the gallery from 50% to 200%, and its application menu can follow the current Omarchy theme or preview Tokyo Night and Flexoki Light. System mode checks for theme changes every two seconds.
 

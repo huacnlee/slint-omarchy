@@ -29,7 +29,7 @@ export component OmTitleBar inherits Rectangle {
         spacing: 4px;
         Rectangle {
             horizontal-stretch: 1;
-            Label { x: 0px; width: parent.width; height: parent.height; text: root.title; color: Palette.bright; font-size: 14px; font-weight: 700; }
+            Label { x: 0px; width: parent.width; height: parent.height; text: root.title; color: Palette.bright; font-size: 14px; font-weight: 700; overflow: elide; }
             TouchArea { pointer-event(event) => { if (event.kind == PointerEventKind.down) { root.drag-requested(); } } }
         }
         OmButton { label: "Zoom out"; icon-name: "minimize"; width: 30px; disabled: root.zoom-percent <= root.min-zoom; clicked => { root.zoom-requested(root.zoom-percent - root.zoom-step); } }
@@ -40,7 +40,8 @@ export component OmTitleBar inherits Rectangle {
             menu-trigger := OmButton { label: "Menu"; chevron: true; width: parent.width; clicked => { application-menu.show(); } }
             application-menu := PopupWindow {
                 x: parent.width - self.width; y: parent.height;
-                width: 188px; height: 132px;
+                // Four 32px actions, one divider, four 2px gaps and 8px of padding.
+                width: 188px; height: 145px;
                 close-policy: close-on-click-outside;
                 forward-focus: application-menu-focus;
                 Rectangle {

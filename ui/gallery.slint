@@ -7,6 +7,11 @@ export struct NavItem { name: string, label: string, description: string, catego
 
 export component Gallery inherits Window {
     title: "Slint Omarchy · Component Gallery";
+    preferred-width: 1060px;
+    preferred-height: 760px;
+    private property <length> sidebar-width: 196px;
+    init => { root.sidebar-width = root.width < 700px ? 148px : 196px; }
+    changed width => { root.sidebar-width = root.width < 700px ? 148px : 196px; }
     no-frame: true;
     resize-border-width: 6px;
     background: Palette.background;
@@ -23,6 +28,8 @@ export component Gallery inherits Window {
     in-out property <string> current-page: "overview";
     in-out property <string> current-page-label: "Overview";
     in-out property <string> current-page-description: "Explore the components together, then use the sidebar to inspect each one.";
+    in-out property <length> nav-scroll-y: 0px;
+    out property <length> nav-visible-height: sidebar-scroll.visible-height;
     in-out property <bool> current-implemented: true;
     in-out property <int> theme-mode: 0;
     in-out property <int> zoom-percent: 100;
@@ -176,7 +183,7 @@ export component Gallery inherits Window {
         HorizontalLayout {
             spacing: 0px;
             Rectangle {
-                width: 220px;
+                width: root.sidebar-width;
                 background: Palette.inset;
                 border-width: 1px;
                 border-color: nav-focus.has-focus ? Palette.accent : Palette.border;
@@ -194,10 +201,9 @@ export component Gallery inherits Window {
                     }
                 }
                 VerticalLayout {
-                    padding-top: 18px;
-                    padding-bottom: 14px;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
                     spacing: 0px;
-                    Text { text: "EXPLORE"; color: Palette.muted; font-size: 11px; font-weight: 700; x: 18px; height: 30px; }
                     Rectangle {
                         sidebar-scroll := ScrollView {
                             x: 0px;
@@ -206,21 +212,32 @@ export component Gallery inherits Window {
                             vertical-scrollbar-policy: ScrollBarPolicy.always-off;
                             horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
                             content-width: self.width;
+                            content-y <=> root.nav-scroll-y;
                             VerticalLayout {
                                 spacing: 2px;
-                                for item[i] in root.pages : Rectangle {
-                                    height: 34px;
-                                    background: root.current-page == item.name ? Palette.foreground.with-alpha(0.18) : nav-touch.has-hover ? Palette.foreground.with-alpha(0.08) : transparent;
-                                    border-width: 0px;
-                                    HorizontalLayout {
-                                        padding-left: 18px;
-                                        padding-right: 14px;
-                                        spacing: 8px;
-                                        Label { text: item.label; color: item.implemented ? root.current-page == item.name ? Palette.bright : Palette.foreground : Palette.muted; }
-                                        Rectangle { horizontal-stretch: 1; }
-                                        Label { text: item.implemented ? item.category : "planned"; color: Palette.muted; font-size: 10px; }
+                                for item[i] in root.pages : VerticalLayout {
+                                    spacing: 0px;
+                                    if i == 0 || item.category != root.pages[i - 1].category : Rectangle {
+                                        height: i == 0 ? 30px : 38px;
+                                        Text {
+                                            x: 10px; y: i == 0 ? 5px : 13px;
+                                            width: parent.width - 10px; height: 20px;
+                                            text: item.category;
+                                            color: Palette.muted; font-size: 10px; font-weight: 700;
+                                            vertical-alignment: center;
+                                        }
                                     }
-                                    nav-touch := TouchArea { clicked => { root.current-page = item.name; root.current-page-label = item.label; root.current-page-description = item.description; root.current-implemented = item.implemented; root.status = item.implemented ? "Viewing " + item.label : "Preview planned: " + item.label; } }
+                                    Rectangle {
+                                        height: 32px;
+                                        background: root.current-page == item.name ? Palette.foreground.with-alpha(0.18) : nav-touch.has-hover ? Palette.foreground.with-alpha(0.08) : transparent;
+                                        Label {
+                                            x: 10px; width: parent.width - 20px; height: parent.height;
+                                            text: item.label;
+                                            color: item.implemented ? root.current-page == item.name ? Palette.accent : Palette.foreground : Palette.muted;
+                                            overflow: elide;
+                                        }
+                                        nav-touch := TouchArea { clicked => { root.current-page = item.name; root.current-page-label = item.label; root.current-page-description = item.description; root.current-implemented = item.implemented; root.status = item.implemented ? "Viewing " + item.label : "Preview planned: " + item.label; nav-focus.focus(); } }
+                                    }
                                 }
                             }
                         }
@@ -237,10 +254,12 @@ export component Gallery inherits Window {
             Rectangle {
                 background: Palette.background;
                 VerticalLayout {
+                    x: 0px; y: 0px;
+                    width: min(parent.width, 820px);
                     padding: 30px;
                     spacing: 20px;
                     Text { text: root.current-page-label; color: Palette.bright; font-size: 27px; font-weight: 700; }
-                    Label { text: root.current-page-description; color: Palette.muted; }
+                    Label { text: root.current-page-description; color: Palette.muted; wrap: word-wrap; }
                     Rectangle { height: 1px; background: Palette.border; }
                     Rectangle {
                         content-scroll := ScrollView {
