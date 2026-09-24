@@ -1,5 +1,5 @@
 import { ListView, ScrollView } from "std-widgets.slint";
-import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmWorkspaceForm, OmResetDialogForm, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmHorizontalSplit, OmVerticalSplit, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, ActivityItem, OmActivityList, ProjectRow, TreeRow, OmTable, OmTree, OmColorPicker, OmTextView, OmToast, OmSheet, OmTitleBar } from "omarchy.slint";
+import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmWorkspaceForm, OmResetDialogForm, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmHorizontalSplit, OmVerticalSplit, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, ActivityItem, OmActivityList, ProjectRow, TreeRow, OmTable, OmTree, OmColorPicker, OmTextView, OmToast, OmSheet, OmSheetTrigger, OmTitleBar } from "omarchy.slint";
 export { Palette } from "omarchy.slint";
 
 export struct NavItem { name: string, label: string, description: string, category: string, implemented: bool }
@@ -8,8 +8,6 @@ export component Gallery inherits Window {
     title: "Slint Omarchy · Component Gallery";
     no-frame: true;
     resize-border-width: 6px;
-    width: 1060px * 100 / root.zoom-percent;
-    height: 760px * 100 / root.zoom-percent;
     background: Palette.background;
     default-font-family: "monospace";
     in property <[NavItem]> pages;
@@ -91,6 +89,7 @@ export component Gallery inherits Window {
     in-out property <length> horizontal-split: 220px;
     in-out property <length> vertical-split: 140px;
     in-out property <length> timeline-offset: 0px;
+    in-out property <length> table-offset: 0px;
     in-out property <bool> popover-open: false;
     in-out property <bool> expanded: false;
     in-out property <bool> appearance-expanded: false;
@@ -407,7 +406,7 @@ export component Gallery inherits Window {
                                 heading: "Text input";
                                 Label { text: "Workspace name"; }
                                 name-input := OmInput {
-                                    width: 380px;
+                                    width: min(380px, parent.width);
                                     text <=> root.input-value;
                                     placeholder: "Project name";
                                     accessible-name: "Workspace name";
@@ -415,7 +414,7 @@ export component Gallery inherits Window {
                                     leading-icon: @image-url("../assets/icons/settings.svg");
                                 }
                                 Label { text: "Quantity"; }
-                                OmInput { width: 380px; text <=> root.input-quantity; suffix: "shares"; accessible-name: "Quantity"; }
+                                OmInput { width: min(380px, parent.width); text <=> root.input-quantity; suffix: "shares"; accessible-name: "Quantity"; }
                                 HorizontalLayout {
                                     spacing: 8px;
                                     OmButton { label: "Read value"; primary: true; clicked => { root.submit-input(root.input-value); } }
@@ -425,7 +424,7 @@ export component Gallery inherits Window {
                             }
                             if root.current-page == "textarea" : Card {
                                 heading: "Workspace notes";
-                                OmTextarea { text <=> root.notes; accessible-name: "Workspace notes"; }
+                                OmTextarea { width: min(380px, parent.width); text <=> root.notes; accessible-name: "Workspace notes"; }
                                 Label { text: "Multiple lines, selection, clipboard and IME."; color: Palette.muted; }
                             }
                             if root.current-page == "select" || root.current-page == "combobox" : Card {
@@ -591,7 +590,7 @@ export component Gallery inherits Window {
                             if root.current-page == "sheet" : Card {
                                 heading: "Project details";
                                 Label { text: "Website refresh · In review"; }
-                                OmButton { label: "Project details…"; outline: true; clicked => { root.sheet-open = true; } }
+                                OmSheetTrigger { label: "Project details…"; outline: true; open <=> root.sheet-open; }
                                 Label { text: "Inspect the project without leaving this page. Close the panel or press Escape to return."; color: Palette.muted; }
                             }
                             if root.current-page == "nav_stack" : Card {
@@ -744,10 +743,24 @@ export component Gallery inherits Window {
                             }
                             if root.current-page == "table" : Card {
                                 heading: "Projects";
-                                OmTable {
-                                    rows: root.projects;
-                                    selected-project: root.selected-project;
-                                    selected(name) => { root.selected-project = name; root.status = "Selected " + name; }
+                                Rectangle {
+                                    width: parent.width;
+                                    height: 32px + root.projects.length * 34px + 8px;
+                                    clip: true;
+                                    OmTable {
+                                        x: root.table-offset;
+                                        y: 0px;
+                                        width: max(parent.width, 640px);
+                                        rows: root.projects;
+                                        selected-project: root.selected-project;
+                                        selected(name) => { root.selected-project = name; root.status = "Selected " + name; }
+                                    }
+                                    OmHorizontalScrollbar {
+                                        x: 0px; y: parent.height - self.height; width: parent.width;
+                                        viewport-x <=> root.table-offset;
+                                        content-width: max(parent.width, 640px);
+                                        page-width: parent.width;
+                                    }
                                 }
                                 Label { text: root.selected-project == "" ? "Select a project to inspect its row state." : "Selected: " + root.selected-project; color: Palette.muted; }
                             }

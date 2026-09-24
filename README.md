@@ -44,7 +44,7 @@ The software renderer can capture a preview without opening a desktop window. Fo
 cargo run -- --page=accordion --click=350,250 --snapshot=/tmp/slint-accordion.png
 ```
 
-Repeat `--click=x,y` to exercise a sequence, or use `--drag=x1,y1,x2,y2`, `--type=text`, `--key=Down`/`--key=Return`, and `--wait-ms=6200` for pointer, typing, keyboard, and timer checks. The capture canvas is 1060 × 760 pixels.
+Repeat `--click=x,y` to exercise a sequence, or use `--drag=x1,y1,x2,y2`, `--type=text`, `--key=Down`/`--key=Return`, and `--wait-ms=6200` for pointer, typing, keyboard, and timer checks. The default capture canvas is 1060 × 760 pixels. Use `--snapshot-size=680x760` to inspect the minimum-width layout.
 
 Slint's built-in performance overlay can be enabled with `SLINT_DEBUG_PERFORMANCE=refresh_full_speed,overlay` for manual frame inspection. Both desktop galleries now open at 1060 × 760 pixels. To compare stable idle process memory and CPU on the same page, build both release binaries and run:
 

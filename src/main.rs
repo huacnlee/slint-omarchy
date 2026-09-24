@@ -225,6 +225,15 @@ fn main() -> Result<(), slint::PlatformError> {
         arg.strip_prefix("--snapshot=")
             .map(std::path::PathBuf::from)
     });
+    let snapshot_size = std::env::args()
+        .skip(1)
+        .find_map(|arg| {
+            let (width, height) = arg.strip_prefix("--snapshot-size=")?.split_once('x')?;
+            let width = width.parse::<u32>().ok()?;
+            let height = height.parse::<u32>().ok()?;
+            (width > 0 && height > 0).then_some((width, height))
+        })
+        .unwrap_or((1060, 760));
     let snapshot_clicks = std::env::args()
         .skip(1)
         .filter_map(|arg| {
@@ -266,7 +275,7 @@ fn main() -> Result<(), slint::PlatformError> {
         })
         .unwrap_or(0);
     if snapshot_path.is_some() {
-        snapshot::install();
+        snapshot::install(snapshot_size);
     } else {
         slint::BackendSelector::new()
             .backend_name("winit".into())
@@ -278,6 +287,10 @@ fn main() -> Result<(), slint::PlatformError> {
             .select()?;
     }
     let app = Gallery::new()?;
+    if snapshot_path.is_none() {
+        app.window()
+            .set_size(slint::LogicalSize::new(1060.0, 760.0));
+    }
     let base_scale_factor = app.window().scale_factor();
     let weak = app.as_weak();
     app.on_set_zoom(move |percent| {
@@ -744,6 +757,7 @@ fn main() -> Result<(), slint::PlatformError> {
             snapshot_text.as_deref(),
             &snapshot_keys,
             snapshot_wait_ms,
+            snapshot_size,
         );
         return Ok(());
     }

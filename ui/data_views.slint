@@ -17,6 +17,9 @@ export component OmTable inherits Rectangle {
     accessible-label: root.accessible-name;
 
     Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
         height: 32px;
         background: Palette.foreground.with-alpha(0.08);
         HorizontalLayout {
@@ -29,7 +32,9 @@ export component OmTable inherits Rectangle {
         }
     }
     for project[index] in root.rows : Rectangle {
+        x: 0px;
         y: 32px + index * 34px;
+        width: parent.width;
         height: 34px;
         background: root.selected-project == project.name ? Palette.foreground.with-alpha(0.18) : row-touch.has-hover || row-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
         accessible-role: button;

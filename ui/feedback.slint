@@ -95,3 +95,15 @@ export component OmSheet inherits Rectangle {
         }
     }
 }
+
+// Bind this trigger and an OmSheet to the same open property. Closing the
+// sheet returns keyboard focus to the control that opened it.
+export component OmSheetTrigger inherits OmButton {
+    in-out property <bool> open: false;
+    private property <bool> has-opened: false;
+    clicked => { root.open = true; }
+    changed open => {
+        if (root.open) { root.has-opened = true; }
+        else if (root.has-opened) { root.focus(); }
+    }
+}

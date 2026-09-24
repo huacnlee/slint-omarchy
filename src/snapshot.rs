@@ -22,10 +22,10 @@ impl Platform for SnapshotPlatform {
     }
 }
 
-pub fn install() {
+pub fn install(size: (u32, u32)) {
     slint::platform::set_platform(Box::new(SnapshotPlatform))
         .expect("set snapshot platform before creating the gallery");
-    WINDOW.with(|window| window.set_size(PhysicalSize::new(1060, 760)));
+    WINDOW.with(|window| window.set_size(PhysicalSize::new(size.0, size.1)));
 }
 
 pub fn save(
@@ -36,11 +36,13 @@ pub fn save(
     typed: Option<&str>,
     keys: &[String],
     wait_ms: u64,
+    size: (u32, u32),
 ) {
     app.show().expect("show gallery in software window");
     WINDOW.with(|window| {
-        let width = 1060;
-        let height = 760;
+        window.set_size(PhysicalSize::new(size.0, size.1));
+        let width = size.0 as usize;
+        let height = size.1 as usize;
         let mut pixels = vec![Rgb8Pixel::default(); width * height];
         window.request_redraw();
         window.draw_if_needed(|renderer| {
