@@ -8,6 +8,7 @@ export struct ActivityItem { title: string, detail: string, tall: bool }
 // The ListView only instantiates visible rows, including the taller detail rows.
 export component OmActivityList inherits Rectangle {
     in property <[ActivityItem]> activities;
+    in property <string> accessible-name: "Activity";
     in-out property <length> viewport-y: 0px;
     callback scroll-to-first;
     callback scroll-to-last;
@@ -28,12 +29,18 @@ export component OmActivityList inherits Rectangle {
         content-y <=> root.viewport-y;
         vertical-scrollbar-policy: ScrollBarPolicy.always-off;
         horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+        accessible-label: root.accessible-name;
+        accessible-item-count: root.activities.length;
 
-        for activity in root.activities : Rectangle {
+        for activity[index] in root.activities : Rectangle {
             height: activity.tall ? 44px : 28px;
             width: parent.width;
             background: transparent;
             border-width: 0px;
+            accessible-role: list-item;
+            accessible-label: activity.title;
+            accessible-description: activity.tall ? activity.detail : "";
+            accessible-item-index: index + 1;
             HorizontalLayout {
                 padding-left: 10px;
                 padding-right: 10px;

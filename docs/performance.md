@@ -1,13 +1,15 @@
 # Idle gallery comparison · 2026-09-24
 
-The Slint 1.18.1 gallery after the 2026-09-24 visual fixes and the GPUI Omarchy `94705f0` release gallery were sampled on the `virtual_list` page at 1060 × 760. The [same sampling script](../scripts/compare_idle.py) ran each application three times, alternated launch order, waited five seconds, and took three one-second-spaced `ps` samples per run. [Raw readings](bench-virtual-list-idle-2026-09-24-slint-1.18.1.json) are retained.
+The Slint 1.18.1 gallery after the reusable-component and visual fixes and the GPUI Omarchy `94705f0` release gallery were sampled on the `virtual_list` page at 1060 × 760. The [sampling script](../scripts/compare_idle.py) ran each application three times, alternated launch order, waited five seconds, and took three one-second-spaced `ps` samples per run. On macOS it required an on-screen, layer-zero window with the expected dimensions before sampling each process. Window-specific screenshots of both applications were also inspected to confirm rendered content. [Raw readings](bench-virtual-list-idle-2026-09-24-visible-window.json) are retained.
 
 | Measure | Slint 1.18.1 | GPUI Omarchy `94705f0` |
 | --- | ---: | ---: |
-| Median resident memory | 101.81 MiB | 85.02 MiB |
-| Release binary size | 24.20 MiB | 22.17 MiB |
+| Median resident memory | 101.80 MiB | 84.95 MiB |
+| Release binary size | 24.28 MiB | 22.17 MiB |
 
-Environment: Mac15,3, arm64, 24 GiB RAM, macOS 27.0. Slint used `winit-femtovg`; GPUI used Metal. These are whole-application idle figures, not framework overhead. CPU samples varied and do not support a reliable CPU comparison. This script does not measure startup time, scrolling latency, frame rate, or power use. Visible-window rendering was not verified during the process sampling; earlier macOS desktop capture attempts returned black frames. Treat these numbers as a preliminary process comparison, not a rendering performance conclusion.
+Environment: Mac15,3, arm64, 24 GiB RAM, macOS 27.0. Slint used `winit-femtovg`; GPUI used Metal. These are whole-application idle figures, not framework overhead. CPU samples varied and do not support a reliable CPU comparison. This script does not measure startup time, scrolling latency, frame rate, or power use. The window check confirms presence and dimensions, not equal rendering work or interaction performance.
+
+The [earlier 2026-09-24 readings](bench-virtual-list-idle-2026-09-24-slint-1.18.1.json) were 101.81 MiB for Slint and 85.02 MiB for GPUI. They preceded the current visual changes and did not verify an on-screen window during sampling.
 
 The Slint 1.16.0 baseline below was collected on the previous day. It used the same scenario, but the conditions were not controlled tightly enough to attribute the memory difference to the Slint upgrade alone.
 

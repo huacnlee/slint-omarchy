@@ -13,8 +13,9 @@ export component OmTable inherits Rectangle {
     width: 560px;
     height: 32px + root.rows.length * 34px;
     background: transparent;
-    accessible-role: list;
+    accessible-role: table;
     accessible-label: root.accessible-name;
+    accessible-item-count: root.rows.length;
 
     Rectangle {
         x: 0px;
@@ -37,8 +38,13 @@ export component OmTable inherits Rectangle {
         width: parent.width;
         height: 34px;
         background: root.selected-project == project.name ? Palette.foreground.with-alpha(0.18) : row-touch.has-hover || row-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+        border-width: row-focus.has-focus ? 1px : 0px;
+        border-color: Palette.accent;
         accessible-role: button;
-        accessible-label: project.name;
+        accessible-label: project.name + ", " + project.status + ", " + project.owner + ", " + project.updated + ", " + project.files;
+        accessible-item-selectable: true;
+        accessible-item-selected: root.selected-project == project.name;
+        accessible-item-index: index + 1;
         accessible-action-default => { root.selected(project.name); }
         forward-focus: row-focus;
         Rectangle { y: parent.height - 1px; height: 1px; background: Palette.foreground.with-alpha(0.12); }
@@ -74,18 +80,28 @@ export component OmTree inherits Rectangle {
     width: 440px;
     height: root.rows.length * 32px;
     background: Palette.foreground.with-alpha(0.04);
-    accessible-role: list;
+    accessible-role: tree;
     accessible-label: root.accessible-name;
+    accessible-item-count: root.rows.length;
+    accessible-delegate-focus: root.cursor;
     forward-focus: tree-focus;
 
     for row[index] in root.rows : Rectangle {
         y: index * 32px;
         height: 32px;
-        background: root.selected-id == row.id ? Palette.foreground.with-alpha(0.18) : tree-touch.has-hover || (tree-focus.has-focus && root.cursor == index) ? Palette.foreground.with-alpha(0.08) : transparent;
+        background: root.selected-id == row.id ? Palette.foreground.with-alpha(0.18) : (!row.disabled && tree-touch.has-hover) || (tree-focus.has-focus && root.cursor == index) ? Palette.foreground.with-alpha(0.08) : transparent;
+        border-width: tree-focus.has-focus && root.cursor == index ? 1px : 0px;
+        border-color: Palette.accent;
         opacity: row.disabled ? 0.45 : 1;
-        accessible-role: button;
+        accessible-role: list-item;
         accessible-label: row.label;
+        accessible-description: row.folder ? "Folder" : "File";
         accessible-enabled: !row.disabled;
+        accessible-item-selectable: !row.disabled;
+        accessible-item-selected: root.selected-id == row.id;
+        accessible-item-index: index + 1;
+        accessible-expandable: row.folder;
+        accessible-expanded: row.expanded;
         accessible-action-default => { if (!row.disabled) { root.activate(index); } }
         HorizontalLayout {
             padding-left: 8px + row.depth * 18px; spacing: 8px;

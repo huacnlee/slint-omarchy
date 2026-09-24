@@ -585,7 +585,12 @@ export component Gallery inherits Window {
                                         if root.checked : Label { text: ".config"; color: Palette.muted; }
                                     }
                                 }
-                                OmPopover { show-hidden <=> root.checked; sync-enabled <=> root.enabled; }
+                                OmPopover {
+                                    trigger-label: "Display options";
+                                    Label { text: "Display options"; color: Palette.bright; font-weight: 700; }
+                                    OmCheckBox { label: "Show hidden files"; checked <=> root.checked; }
+                                    OmSwitch { label: "Sync workspace"; checked <=> root.enabled; }
+                                }
                                 Label { text: root.enabled ? "Workspace sync is enabled." : "Workspace sync is paused."; color: Palette.muted; }
                             }
                             if root.current-page == "tooltip" : Card {
@@ -601,14 +606,28 @@ export component Gallery inherits Window {
                                             Label { text: root.pressed ? "In favorites" : "Not in favorites"; color: Palette.muted; }
                                         }
                                         Rectangle { horizontal-stretch: 1; }
-                                        Rectangle { width: 34px; OmTooltipButton { y: (parent.height - 34px) / 2; favorite <=> root.pressed; } }
+                                        Rectangle {
+                                            width: 34px;
+                                            OmTooltipButton {
+                                                y: (parent.height - 34px) / 2;
+                                                action-label: root.pressed ? "Remove from favorites" : "Add to favorites";
+                                                selected: root.pressed;
+                                                clicked => { root.pressed = !root.pressed; }
+                                            }
+                                        }
                                     }
                                 }
                                 Label { text: "Hover the star for its action. Tab and Return also activate it."; color: Palette.muted; }
                             }
                             if root.current-page == "hover_card" : Card {
                                 heading: "Workspace owner";
-                                OmHoverCard {}
+                                OmHoverCard {
+                                    trigger-prefix: "AL";
+                                    trigger-label: "Alex Lee";
+                                    Label { text: "Alex Lee"; color: Palette.bright; font-weight: 700; }
+                                    Label { text: "Design engineer · Workspace owner"; }
+                                    Text { text: "Maintains the design system and reviews desktop releases."; color: Palette.muted; font-size: 12px; wrap: word-wrap; }
+                                }
                                 Label { text: "Hover over the member to preview their profile."; color: Palette.muted; }
                             }
                             if root.current-page == "sheet" : Card {
@@ -725,18 +744,27 @@ export component Gallery inherits Window {
                                 if root.workspace-created : Label { text: "Workspace created"; color: Palette.bright; font-weight: 700; }
                                 if root.workspace-created : OmButton { label: "Reset example"; clicked => { root.workspace-created = false; } }
                             }
-                            if root.current-page == "virtual_list" || root.current-page == "scrollbar" : Card {
-                                heading: root.current-page == "scrollbar" ? "Scrollbar" : "Sample activity · 1,000 events";
+                            if root.current-page == "virtual_list" || root.current-page == "scrollbar" : VerticalLayout {
+                                spacing: 12px;
+                                alignment: start;
+                                Label { text: "Sample activity · 1,000 events"; }
                                 HorizontalLayout {
                                     spacing: 8px;
                                     OmButton { label: "First event"; outline: true; clicked => { activity-list.scroll-to-first(); } }
                                     OmButton { label: "Last event"; outline: true; clicked => { activity-list.scroll-to-last(); } }
                                 }
-                                activity-list := OmActivityList {
-                                    activities: root.activities;
-                                    height: root.current-page == "scrollbar" ? 280px : 420px;
+                                Rectangle {
+                                    height: root.current-page == "scrollbar" ? 280px : 300px;
+                                    border-width: 1px;
+                                    border-color: Palette.border;
+                                    activity-list := OmActivityList {
+                                        x: 1px; y: 1px;
+                                        width: parent.width - 2px;
+                                        height: parent.height - 2px;
+                                        activities: root.activities;
+                                    }
                                 }
-                                Label { text: "Scroll through the log or jump to either end. Longer events keep their full description."; color: Palette.muted; }
+                                Label { text: "Scroll through the log or jump to either end. Longer events keep their full description."; color: Palette.muted; wrap: word-wrap; }
                                 if root.current-page == "scrollbar" : Label { text: "Project timeline · Scroll horizontally"; color: Palette.muted; }
                                 if root.current-page == "scrollbar" : Rectangle {
                                     height: 86px;

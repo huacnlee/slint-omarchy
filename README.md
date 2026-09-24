@@ -56,7 +56,7 @@ cargo build --release
 python3 scripts/compare_idle.py --page virtual_list --runs 3
 ```
 
-The script launches the binaries directly, forces Slint's `winit-femtovg` renderer, waits for them to settle, samples each process with `ps`, and reports median resident memory. GPUI uses Metal, so these are end-to-end application figures with different rendering stacks. The script does not measure frame rate, scrolling latency, or startup time. Keep display scale, theme, power mode, and background load the same for both runs.
+The script launches the binaries directly, forces Slint's `winit-femtovg` renderer, waits for them to settle, verifies a visible 1060 × 760 window on macOS, samples each process with `ps`, and reports median resident memory. GPUI uses Metal, so these are end-to-end application figures with different rendering stacks. The script does not measure frame rate, scrolling latency, or startup time. Keep display scale, theme, power mode, and background load the same for both runs.
 
 The [idle comparison](docs/performance.md) records three-run `virtual_list` results for Slint 1.18.1 and GPUI, with the raw readings and measurement limits. The list's First event and Last event buttons let you inspect the two ends without a long manual scroll.
 
