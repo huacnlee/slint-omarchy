@@ -328,10 +328,9 @@ fn main() -> Result<(), slint::PlatformError> {
     let timer_state = saved_toast_timer.clone();
     app.on_restart_toast_timer(move || {
         if let Some(app) = weak.upgrade() {
-            timer_state.borrow_mut().restart(
-                Instant::now(),
-                app.get_toast_hovered() || app.get_toast_focused(),
-            );
+            timer_state
+                .borrow_mut()
+                .restart(Instant::now(), app.get_toast_paused());
         }
     });
     let timer_state = saved_toast_timer.clone();
@@ -352,8 +351,6 @@ fn main() -> Result<(), slint::PlatformError> {
                 if expired {
                     saved_toast_timer.borrow_mut().dismiss();
                     app.set_toast_open(false);
-                    app.set_toast_hovered(false);
-                    app.set_toast_focused(false);
                 }
             }
         },

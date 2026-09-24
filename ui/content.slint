@@ -1,0 +1,100 @@
+import { Palette } from "theme.slint";
+import { Label } from "base.slint";
+
+// A determinate value on a track. The value is a percentage and is clamped
+// for painting, leaving callers free to keep their own source of truth.
+export component OmProgress inherits Rectangle {
+    in property <float> value: 0;
+    in property <color> track-color: Palette.border;
+    in property <color> indicator-color: Palette.accent;
+    height: 6px;
+    background: root.track-color;
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width * max(0, min(100, root.value)) / 100;
+        height: parent.height;
+        background: root.indicator-color;
+    }
+}
+
+// Image loading remains with the caller; initials are the explicit fallback.
+export component OmAvatar inherits Rectangle {
+    in property <string> initials;
+    in property <image> avatar-image;
+    in property <bool> has-image: false;
+    in property <color> fallback-color: Palette.foreground.with-alpha(0.04);
+    width: 32px;
+    height: 32px;
+    background: root.fallback-color;
+    border-width: 1px;
+    border-color: Palette.foreground.with-alpha(0.4);
+    Label {
+        width: parent.width;
+        height: parent.height;
+        text: root.initials;
+        horizontal-alignment: center;
+        font-size: 12px;
+        visible: !root.has-image;
+    }
+    if root.has-image : Image {
+        x: 1px;
+        y: 1px;
+        width: max(0px, parent.width - 2px);
+        height: max(0px, parent.height - 2px);
+        source: root.avatar-image;
+        image-fit: cover;
+    }
+}
+
+// Callers put their action button or other next step into the children slot.
+export component OmEmptyState inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+    in property <length> content-padding: 18px;
+    height: content.preferred-height + 2 * root.content-padding;
+    content := VerticalLayout {
+        x: root.content-padding;
+        y: root.content-padding;
+        width: max(0px, parent.width - 2 * root.content-padding);
+        height: self.preferred-height;
+        alignment: start;
+        spacing: 8px;
+        Label { text: root.title; color: Palette.bright; font-weight: 700; }
+        if root.description != "" : Label { text: root.description; color: Palette.muted; }
+        @children
+    }
+}
+
+// A title and an arbitrary group of related contents on one quiet surface.
+export component OmPanel inherits Rectangle {
+    in property <string> title;
+    in property <length> content-padding: 18px;
+    in property <length> content-gap: 14px;
+    height: content.preferred-height + 2 * root.content-padding;
+    background: Palette.background;
+    border-width: 1px;
+    border-color: Palette.border;
+    content := VerticalLayout {
+        x: root.content-padding;
+        y: root.content-padding;
+        width: max(0px, parent.width - 2 * root.content-padding);
+        height: self.preferred-height;
+        alignment: start;
+        spacing: root.content-gap;
+        Label { text: root.title; color: Palette.bright; font-size: 14px; font-weight: 600; }
+        @children
+    }
+}
+
+// Set vertical and line-length for inline toolbar rules; horizontal rules
+// normally inherit their width from their container.
+export component OmSeparator inherits Rectangle {
+    in property <bool> vertical: false;
+    in property <length> line-length: 20px;
+    in property <length> thickness: 1px;
+    in property <color> tone: Palette.foreground.with-alpha(0.12);
+    width: root.vertical ? root.thickness : 400px;
+    height: root.vertical ? root.line-length : root.thickness;
+    background: root.tone;
+}

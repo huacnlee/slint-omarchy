@@ -1,0 +1,170 @@
+import { Palette } from "theme.slint";
+import { Label, OmAlignedIcon } from "base.slint";
+
+export component OmNavRow inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <image> trailing-icon: @image-url("../assets/icons/chevron-right.svg");
+    callback activated;
+    width: 440px;
+    height: 62px;
+    background: nav-touch.has-hover || nav-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: nav-focus.has-focus ? Palette.accent : Palette.border;
+    forward-focus: nav-focus;
+    accessible-role: button;
+    accessible-label: root.title;
+    accessible-action-default => { root.activated(); }
+    HorizontalLayout {
+        padding-left: 12px; padding-right: 12px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            Label { text: root.title; color: Palette.bright; }
+            Label { text: root.detail; color: Palette.muted; font-size: 11px; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        OmAlignedIcon { glyph: root.trailing-icon; }
+    }
+    nav-touch := TouchArea { clicked => { root.activated(); } }
+    nav-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.activated(); return accept; }
+            return reject;
+        }
+    }
+}
+
+export component OmAccordionItem inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+    in property <length> panel-height: 74px;
+    in-out property <bool> expanded: false;
+    height: root.expanded ? 42px + root.panel-height : 42px;
+    border-width: 1px; border-color: Palette.border;
+    Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: 42px;
+        background: trigger.has-hover || item-focus.has-focus ? Palette.foreground.with-alpha(0.08) : Palette.foreground.with-alpha(0.04);
+        Label { x: 12px; y: 0px; width: parent.width - 48px; height: parent.height; text: root.title; color: Palette.bright; font-weight: 600; }
+        Image { x: parent.width - 28px; y: 12px; width: 18px; height: 18px; source: root.expanded ? @image-url("../assets/icons/chevron-down.svg") : @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
+        trigger := TouchArea { clicked => { root.expanded = !root.expanded; item-focus.focus(); } }
+    }
+    if root.expanded : Text {
+        x: 12px; y: 56px; width: parent.width - 24px; height: max(0px, root.panel-height - 28px);
+        text: root.description; color: Palette.foreground; font-size: 13px; wrap: word-wrap;
+    }
+    forward-focus: item-focus;
+    accessible-role: button;
+    accessible-label: root.title;
+    accessible-expanded: root.expanded;
+    accessible-action-default => { root.expanded = !root.expanded; }
+    item-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.expanded = !root.expanded; return accept; }
+            return reject;
+        }
+    }
+}
+
+export component OmHorizontalSplit inherits Rectangle {
+    in-out property <length> split-size: 220px;
+    in property <length> minimum-first-size: 140px;
+    in property <length> minimum-second-size: 140px;
+    in property <string> first-title;
+    in property <string> first-line;
+    in property <string> second-line;
+    in property <string> second-title;
+    in property <string> second-description;
+    in property <string> second-hint;
+    in property <string> divider-label: "Resize panels";
+    private property <length> divider-size: 6px;
+    private property <length> maximum-first-size: max(root.minimum-first-size, root.width - root.minimum-second-size - root.divider-size);
+    private property <length> actual-split-size: max(min(root.minimum-first-size, root.width - root.divider-size), min(root.split-size, root.maximum-first-size));
+    width: 700px; height: 300px;
+    border-width: 1px; border-color: Palette.border;
+    Rectangle {
+        x: 0px; y: 0px; width: root.actual-split-size; height: parent.height;
+        background: Palette.foreground.with-alpha(0.04);
+        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-title; color: Palette.bright; }
+        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-line; }
+        Label { x: 14px; y: 74px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-line; }
+    }
+    Rectangle {
+        x: root.actual-split-size + root.divider-size; width: max(0px, parent.width - self.x); height: parent.height;
+        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-title; color: Palette.bright; font-weight: 700; }
+        Text { x: 14px; y: 46px; width: max(0px, parent.width - 28px); height: 48px; text: root.second-description; color: Palette.foreground; font-size: 13px; wrap: word-wrap; }
+        Text { x: 14px; y: 110px; width: max(0px, parent.width - 28px); height: 48px; text: root.second-hint; color: Palette.muted; font-size: 12px; wrap: word-wrap; }
+    }
+    divider := Rectangle {
+        x: root.actual-split-size; width: root.divider-size; height: parent.height;
+        background: divider-touch.has-hover || divider-focus.has-focus ? Palette.accent : Palette.border;
+        forward-focus: divider-focus;
+        accessible-role: slider;
+        accessible-label: root.divider-label;
+        accessible-value: "" + (root.actual-split-size / 1px) + " px";
+        divider-touch := TouchArea {
+            private property <length> start-x;
+            private property <length> start-size;
+            pointer-event(event) => { if (event.kind == PointerEventKind.down) { self.start-x = self.mouse-x; self.start-size = root.split-size; } }
+            moved => { if (self.pressed) { root.split-size = max(root.minimum-first-size, min(root.maximum-first-size, self.start-size + self.mouse-x - self.start-x)); } }
+        }
+        divider-focus := FocusScope {
+            width: 0px;
+            key-pressed(event) => {
+                if (event.text == Key.LeftArrow) { root.split-size = max(root.minimum-first-size, root.actual-split-size - 10px); return accept; }
+                if (event.text == Key.RightArrow) { root.split-size = min(root.maximum-first-size, root.actual-split-size + 10px); return accept; }
+                return reject;
+            }
+        }
+    }
+}
+
+export component OmVerticalSplit inherits Rectangle {
+    in-out property <length> split-size: 140px;
+    in property <length> minimum-first-size: 80px;
+    in property <length> minimum-second-size: 60px;
+    in property <string> first-title;
+    in property <string> first-line;
+    in property <string> second-title;
+    in property <string> second-line;
+    in property <string> divider-label: "Resize panels";
+    private property <length> divider-size: 6px;
+    private property <length> maximum-first-size: max(root.minimum-first-size, root.height - root.minimum-second-size - root.divider-size);
+    private property <length> actual-split-size: max(min(root.minimum-first-size, root.height - root.divider-size), min(root.split-size, root.maximum-first-size));
+    width: 700px; height: 240px;
+    border-width: 1px; border-color: Palette.border;
+    Rectangle {
+        x: 0px; y: 0px; height: root.actual-split-size; width: parent.width;
+        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-title; color: Palette.bright; }
+        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: root.first-line; }
+    }
+    Rectangle {
+        y: root.actual-split-size + root.divider-size; height: max(0px, parent.height - self.y); width: parent.width;
+        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-title; color: Palette.bright; }
+        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: root.second-line; color: Palette.muted; }
+    }
+    divider := Rectangle {
+        y: root.actual-split-size; height: root.divider-size; width: parent.width;
+        background: divider-touch.has-hover || divider-focus.has-focus ? Palette.accent : Palette.border;
+        forward-focus: divider-focus;
+        accessible-role: slider;
+        accessible-label: root.divider-label;
+        accessible-value: "" + (root.actual-split-size / 1px) + " px";
+        divider-touch := TouchArea {
+            private property <length> start-y;
+            private property <length> start-size;
+            pointer-event(event) => { if (event.kind == PointerEventKind.down) { self.start-y = self.mouse-y; self.start-size = root.split-size; } }
+            moved => { if (self.pressed) { root.split-size = max(root.minimum-first-size, min(root.maximum-first-size, self.start-size + self.mouse-y - self.start-y)); } }
+        }
+        divider-focus := FocusScope {
+            width: 0px;
+            key-pressed(event) => {
+                if (event.text == Key.UpArrow) { root.split-size = max(root.minimum-first-size, root.actual-split-size - 10px); return accept; }
+                if (event.text == Key.DownArrow) { root.split-size = min(root.maximum-first-size, root.actual-split-size + 10px); return accept; }
+                return reject;
+            }
+        }
+    }
+}

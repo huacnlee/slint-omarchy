@@ -1,0 +1,105 @@
+import { Palette } from "theme.slint";
+import { Label, OmButton } from "base.slint";
+import { OmCheckBox, OmSwitch } from "forms.slint";
+
+export component OmPopover inherits Rectangle {
+    in property <string> trigger-label: "Display options";
+    in property <string> title: root.trigger-label;
+    in property <string> checkbox-label: "Show hidden files";
+    in property <string> switch-label: "Sync workspace";
+    in-out property <bool> show-hidden;
+    in-out property <bool> sync-enabled;
+    width: 170px; height: 32px;
+    callback close;
+    close => { options-popup.close(); options-trigger.focus(); }
+    options-trigger := OmButton { x: 0px; label: root.trigger-label; chevron: true; clicked => { options-popup.show(); } }
+    options-popup := PopupWindow {
+        x: 0px; y: root.height + 4px;
+        width: 260px; height: 152px;
+        close-policy: close-on-click-outside;
+        forward-focus: hidden-checkbox;
+        Rectangle {
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            VerticalLayout {
+                padding: 14px; spacing: 10px;
+                Label { text: root.title; color: Palette.bright; font-weight: 700; }
+                hidden-checkbox := OmCheckBox { label: root.checkbox-label; checked <=> root.show-hidden; cancel-on-escape: true; cancelled => { root.close(); } }
+                OmSwitch { label: root.switch-label; checked <=> root.sync-enabled; cancel-on-escape: true; cancelled => { root.close(); } }
+            }
+        }
+    }
+}
+
+export component OmTooltipButton inherits Rectangle {
+    in property <string> inactive-label: "Add to favorites";
+    in property <string> active-label: "Remove from favorites";
+    in-out property <bool> favorite;
+    callback toggled(bool);
+    callback toggle;
+    toggle => { root.favorite = !root.favorite; root.toggled(root.favorite); }
+    width: 34px; height: 34px;
+    background: tip-touch.has-hover || tip-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px; border-color: tip-focus.has-focus ? Palette.accent : Palette.border;
+    forward-focus: tip-focus;
+    accessible-role: button;
+    accessible-label: root.favorite ? root.active-label : root.inactive-label;
+    accessible-action-default => { root.toggle(); }
+    Image { x: 8px; y: 8px; width: 18px; height: 18px; source: @image-url("../assets/icons/star.svg"); colorize: root.favorite ? Palette.accent : Palette.foreground; }
+    tip-touch := TouchArea {
+        clicked => { root.toggle(); }
+        changed has-hover => { if (self.has-hover) { tip-popup.show(); } else { tip-popup.close(); } }
+    }
+    tip-focus := FocusScope {
+        width: 0px;
+        changed has-focus => { if (self.has-focus) { tip-popup.show(); } else { tip-popup.close(); } }
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.toggle(); return accept; }
+            return reject;
+        }
+    }
+    tip-popup := PopupWindow {
+        x: -90px; y: root.height + 4px;
+        width: 170px; height: 32px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            Label { x: 8px; width: parent.width - 16px; height: parent.height; text: root.favorite ? root.active-label : root.inactive-label; }
+        }
+    }
+}
+
+export component OmHoverCard inherits Rectangle {
+    in property <string> initials: "AL";
+    in property <string> name: "Alex Lee";
+    in property <string> subtitle: "Design engineer · Workspace owner";
+    in property <string> description: "Maintains the design system and reviews desktop releases.";
+    width: 180px; height: 36px;
+    background: hover-touch.has-hover ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px; border-color: hover-touch.has-hover ? Palette.border : transparent;
+    HorizontalLayout {
+        spacing: 8px;
+        Rectangle { width: 28px; Rectangle { y: (parent.height - 28px) / 2; width: 28px; height: 28px; background: Palette.foreground.with-alpha(0.08); Label { text: root.initials; width: parent.width; height: parent.height; horizontal-alignment: center; } } }
+        Label { text: root.name; }
+    }
+    hover-touch := TouchArea {
+        changed has-hover => { if (self.has-hover) { hover-timer.start(); } else { hover-timer.stop(); hover-popup.close(); } }
+    }
+    hover-timer := Timer { interval: 250ms; running: false; triggered => { hover-popup.show(); } }
+    hover-popup := PopupWindow {
+        x: 0px; y: root.height + 4px;
+        width: 320px; height: 124px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            VerticalLayout {
+                padding: 14px; spacing: 8px;
+                Label { text: root.name; color: Palette.bright; font-weight: 700; }
+                Label { text: root.subtitle; }
+                Text { text: root.description; color: Palette.muted; font-size: 12px; wrap: word-wrap; }
+            }
+        }
+    }
+}

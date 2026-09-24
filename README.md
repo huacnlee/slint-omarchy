@@ -8,6 +8,30 @@ Run the desktop gallery:
 cargo run
 ```
 
+## Reuse the components
+
+The gallery imports its controls from [`ui/omarchy.slint`](ui/omarchy.slint). That file re-exports controls for actions, forms, navigation, content, data views, overlays, feedback, and the title bar. An application can import the same components and connect their state with Slint bindings. Keep the `ui/` files and `assets/icons/` directory together so the relative imports and icon paths resolve.
+
+```slint
+import { Palette, OmButton, OmCheckBox, OmSlider } from "path/to/omarchy.slint";
+
+export component Settings inherits Window {
+    background: Palette.background;
+    in-out property <bool> sync-enabled: false;
+    in-out property <int> volume: 40;
+
+    VerticalLayout {
+        OmCheckBox { label: "Sync automatically"; checked <=> root.sync-enabled; }
+        OmSlider { label: "Volume"; value <=> root.volume; }
+        OmButton { label: "Apply"; primary: true; clicked => { /* save settings */ } }
+    }
+}
+```
+
+[`examples/reuse.rs`](examples/reuse.rs) is a standalone window that imports the component library. Verify the public Slint API with `cargo check --example reuse`.
+
+The host supplies models and handles callbacks for controls such as `OmTable`, `OmTree`, `OmColorPicker`, `OmToast`, and `OmTitleBar`. The gallery in [`ui/gallery.slint`](ui/gallery.slint) shows those bindings in context.
+
 To open the 1,000-row scrolling preview directly:
 
 ```sh

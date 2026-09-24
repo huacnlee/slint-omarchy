@@ -1,0 +1,60 @@
+import { ListView } from "std-widgets.slint";
+import { Label } from "base.slint";
+import { OmScrollbar } from "display.slint";
+import { Palette } from "theme.slint";
+
+export struct ActivityItem { title: string, detail: string, tall: bool }
+
+// The ListView only instantiates visible rows, including the taller detail rows.
+export component OmActivityList inherits Rectangle {
+    in property <[ActivityItem]> activities;
+    in-out property <length> viewport-y: 0px;
+    callback scroll-to-first;
+    callback scroll-to-last;
+
+    height: 420px;
+    background: transparent;
+
+    scroll-to-first => { root.viewport-y = 0px; }
+    scroll-to-last => {
+        root.viewport-y = min(0px, activity-list.visible-height - activity-list.viewport-height);
+    }
+
+    activity-list := ListView {
+        width: parent.width - scrollbar.width - 2px;
+        height: parent.height;
+        viewport-y <=> root.viewport-y;
+        vertical-scrollbar-policy: ScrollBarPolicy.always-off;
+        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+
+        for activity in root.activities : Rectangle {
+            height: activity.tall ? 44px : 28px;
+            width: parent.width;
+            background: transparent;
+            border-width: 0px;
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 2px;
+                    Label { text: activity.title; color: Palette.foreground; }
+                    if activity.tall : Label {
+                        text: activity.detail;
+                        color: Palette.muted;
+                        font-size: 11px;
+                    }
+                }
+            }
+        }
+    }
+
+    scrollbar := OmScrollbar {
+        x: parent.width - self.width;
+        height: parent.height;
+        viewport-y <=> root.viewport-y;
+        content-height: activity-list.viewport-height;
+        page-height: activity-list.visible-height;
+    }
+}
