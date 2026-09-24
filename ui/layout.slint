@@ -1,0 +1,112 @@
+import { Palette } from "theme.slint";
+import { Label, OmAlignedIcon, OmButton } from "base.slint";
+
+export component OmNavRow inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <image> trailing-icon: @image-url("../assets/icons/chevron-right.svg");
+    callback activated;
+    width: 440px;
+    height: 62px;
+    background: nav-touch.has-hover || nav-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: nav-focus.has-focus ? Palette.accent : Palette.border;
+    forward-focus: nav-focus;
+    accessible-role: button;
+    accessible-label: root.title;
+    accessible-action-default => { root.activated(); }
+    HorizontalLayout {
+        padding-left: 12px; padding-right: 12px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            Label { text: root.title; color: Palette.bright; }
+            Label { text: root.detail; color: Palette.muted; font-size: 11px; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        OmAlignedIcon { glyph: root.trailing-icon; }
+    }
+    nav-touch := TouchArea { clicked => { root.activated(); } }
+    nav-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.activated(); return accept; }
+            return reject;
+        }
+    }
+}
+
+export component OmAccordionItem inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+    in property <length> panel-height: 32px;
+    in-out property <bool> expanded: false;
+    height: root.expanded ? 42px + max(root.panel-height, description-label.preferred-height + 16px) : 42px;
+    // The accordion is a sequence of sections, not a stack of outlined buttons.
+    Rectangle { x: 0px; y: 0px; width: parent.width; height: 1px; background: Palette.border; }
+    Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: 42px;
+        background: trigger.has-hover || item-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+        HorizontalLayout {
+            x: 0px; y: 0px; width: parent.width; height: parent.height;
+            padding-left: 8px; padding-right: 8px;
+            Label { horizontal-stretch: 1; height: parent.height; text: root.title; color: Palette.bright; font-weight: 600; }
+            Rectangle {
+                width: 16px; height: parent.height;
+                Image { y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.expanded ? @image-url("../assets/icons/chevron-down.svg") : @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
+            }
+        }
+        trigger := TouchArea { clicked => { root.expanded = !root.expanded; item-focus.focus(); } }
+    }
+    description-label := Text {
+        x: 10px; y: 50px; width: parent.width - 20px; height: self.preferred-height;
+        visible: root.expanded;
+        text: root.description; color: Palette.foreground; font-family: "monospace"; font-size: 13px; wrap: word-wrap;
+    }
+    if root.expanded : Rectangle { y: parent.height - 1px; width: parent.width; height: 1px; background: Palette.border; }
+    forward-focus: item-focus;
+    accessible-role: button;
+    accessible-label: root.title;
+    accessible-expanded: root.expanded;
+    accessible-action-default => { root.expanded = !root.expanded; }
+    item-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.expanded = !root.expanded; return accept; }
+            return reject;
+        }
+    }
+}
+
+// A disclosure owns its trigger and content geometry. The caller owns the
+// expanded state and supplies any controls or text shown inside the panel.
+export component OmCollapsible inherits Rectangle {
+    in property <string> title;
+    in-out property <bool> expanded: false;
+    height: disclosure-trigger.height + (root.expanded ? disclosure-panel.height + 14px : 0px);
+
+    disclosure-trigger := OmButton {
+        x: 0px;
+        y: 0px;
+        label: root.title;
+        leading-icon: root.expanded ? "down" : "right";
+        outline: true;
+        clicked => { root.expanded = !root.expanded; }
+    }
+    disclosure-panel := Rectangle {
+        x: 0px;
+        y: disclosure-trigger.height + 14px;
+        width: parent.width;
+        height: root.expanded ? disclosure-content.preferred-height + 28px : 0px;
+        visible: root.expanded;
+        background: Palette.foreground.with-alpha(0.04);
+        disclosure-content := VerticalLayout {
+            x: 14px;
+            y: 14px;
+            width: parent.width - 28px;
+            height: self.preferred-height;
+            spacing: 12px;
+            @children
+        }
+    }
+}

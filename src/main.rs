@@ -203,7 +203,7 @@ fn page_description(page: &str) -> &'static str {
         "toast" => "Brief feedback that leaves your current task in place.",
         "icon" => "Monochrome SVG icons that inherit the surrounding text color.",
         "avatar" => "Identify people and workspaces with a square image or initials.",
-        "text_view" => "Read structured documents with selectable text and links.",
+        "text_view" => "Read styled text with links and a composed document example.",
         "panel" => "A surface for a related group of settings or information.",
         "virtual_list" => "Browse a large activity log with variable-height rows.",
         "scrollbar" => "Drag the scroll thumb to move through a long activity log.",
@@ -225,10 +225,26 @@ fn main() -> Result<(), slint::PlatformError> {
         arg.strip_prefix("--snapshot=")
             .map(std::path::PathBuf::from)
     });
+    let snapshot_size = std::env::args()
+        .skip(1)
+        .find_map(|arg| {
+            let (width, height) = arg.strip_prefix("--snapshot-size=")?.split_once('x')?;
+            let width = width.parse::<u32>().ok()?;
+            let height = height.parse::<u32>().ok()?;
+            (width > 0 && height > 0).then_some((width, height))
+        })
+        .unwrap_or((1060, 760));
     let snapshot_clicks = std::env::args()
         .skip(1)
         .filter_map(|arg| {
             let (x, y) = arg.strip_prefix("--click=")?.split_once(',')?;
+            Some((x.parse::<f32>().ok()?, y.parse::<f32>().ok()?))
+        })
+        .collect::<Vec<_>>();
+    let snapshot_hovers = std::env::args()
+        .skip(1)
+        .filter_map(|arg| {
+            let (x, y) = arg.strip_prefix("--hover=")?.split_once(',')?;
             Some((x.parse::<f32>().ok()?, y.parse::<f32>().ok()?))
         })
         .collect::<Vec<_>>();
@@ -266,7 +282,7 @@ fn main() -> Result<(), slint::PlatformError> {
         })
         .unwrap_or(0);
     if snapshot_path.is_some() {
-        snapshot::install();
+        snapshot::install(snapshot_size);
     } else {
         slint::BackendSelector::new()
             .backend_name("winit".into())
@@ -278,6 +294,10 @@ fn main() -> Result<(), slint::PlatformError> {
             .select()?;
     }
     let app = Gallery::new()?;
+    if snapshot_path.is_none() {
+        app.window()
+            .set_size(slint::LogicalSize::new(1060.0, 760.0));
+    }
     let base_scale_factor = app.window().scale_factor();
     let weak = app.as_weak();
     app.on_set_zoom(move |percent| {
@@ -328,10 +348,9 @@ fn main() -> Result<(), slint::PlatformError> {
     let timer_state = saved_toast_timer.clone();
     app.on_restart_toast_timer(move || {
         if let Some(app) = weak.upgrade() {
-            timer_state.borrow_mut().restart(
-                Instant::now(),
-                app.get_toast_hovered() || app.get_toast_focused(),
-            );
+            timer_state
+                .borrow_mut()
+                .restart(Instant::now(), app.get_toast_paused());
         }
     });
     let timer_state = saved_toast_timer.clone();
@@ -352,8 +371,6 @@ fn main() -> Result<(), slint::PlatformError> {
                 if expired {
                     saved_toast_timer.borrow_mut().dismiss();
                     app.set_toast_open(false);
-                    app.set_toast_hovered(false);
-                    app.set_toast_focused(false);
                 }
             }
         },
@@ -406,12 +423,18 @@ fn main() -> Result<(), slint::PlatformError> {
         .collect::<Vec<_>>();
     app.set_pages(ModelRc::new(VecModel::from(pages)));
     let activities = (0..1_000)
-        .map(|index| ActivityItem {
-            title: format!("Event {:04} · Updated project notes", index + 1).into(),
-            detail: "Review requested by Alex Lee".into(),
-            tall: index % 5 == 0,
+        .map(|index| VirtualTextRow {
+            primary: format!("Event {:04} · Updated project notes", index + 1).into(),
+            secondary: if index % 5 == 0 {
+                "Review requested by Alex Lee"
+            } else {
+                ""
+            }
+            .into(),
+            row_height: if index % 5 == 0 { 44.0 } else { 28.0 },
         })
         .collect::<Vec<_>>();
+    app.set_activity_total_height(activities.iter().map(|row| row.row_height).sum());
     app.set_activities(ModelRc::new(VecModel::from(activities)));
     let choices = [
         ("personal", "Personal", true),
@@ -736,6 +759,36 @@ fn main() -> Result<(), slint::PlatformError> {
             app.set_current_page_description(page_description(name).into());
             app.set_current_implemented(IMPLEMENTED.contains(&name));
             app.set_status(format!("Viewing {}", display_name(name)).into());
+
+            // Keep keyboard selection inside the sidebar viewport. The first
+            // group header is 30px; later groups add 38px. Rows are 32px with
+            // a 2px gap, matching the gallery's navigation layout.
+            let mut first_in_group = 0;
+            let mut group_index = 0;
+            for (index, (_, names)) in GROUPS.iter().enumerate() {
+                if next < first_in_group + names.len() {
+                    group_index = index;
+                    break;
+                }
+                first_in_group += names.len();
+            }
+            let row_top = 30.0 + 34.0 * next as f32 + 38.0 * group_index as f32;
+            let row_bottom = row_top + 32.0;
+            let visible_height = app.get_nav_visible_height();
+            if visible_height > 0.0 {
+                let viewport_top = -app.get_nav_scroll_y();
+                let viewport_bottom = viewport_top + visible_height;
+                let next_top = if next == 0 {
+                    0.0
+                } else if row_top < viewport_top {
+                    row_top
+                } else if row_bottom > viewport_bottom {
+                    row_bottom - visible_height
+                } else {
+                    viewport_top
+                };
+                app.set_nav_scroll_y(-next_top.max(0.0));
+            }
         }
     });
     if let Some(path) = snapshot_path {
@@ -743,10 +796,12 @@ fn main() -> Result<(), slint::PlatformError> {
             &app,
             &path,
             &snapshot_clicks,
+            &snapshot_hovers,
             &snapshot_drags,
             snapshot_text.as_deref(),
             &snapshot_keys,
             snapshot_wait_ms,
+            snapshot_size,
         );
         return Ok(());
     }

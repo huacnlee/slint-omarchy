@@ -21,6 +21,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+WINDOW_INFO = Path(__file__).with_name("window_info.swift")
 
 
 def sample_process(pid: int) -> tuple[int, float]:
@@ -29,6 +30,18 @@ def sample_process(pid: int) -> tuple[int, float]:
     ).strip()
     memory_kib, cpu_percent = output.split()
     return int(memory_kib), float(cpu_percent)
+
+
+def visible_window(pid: int) -> dict | None:
+    if platform.system() != "Darwin":
+        return None
+    output = subprocess.check_output(
+        ["swift", str(WINDOW_INFO), str(pid)], text=True, stderr=subprocess.PIPE
+    )
+    window = json.loads(output)
+    if (window["width"], window["height"]) != (1060, 760):
+        raise RuntimeError(f"unexpected window size for PID {pid}: {window}")
+    return window
 
 
 def measure(binary: Path, page: str, slint: bool, settle: float, samples: int) -> dict:
@@ -49,12 +62,14 @@ def measure(binary: Path, page: str, slint: bool, settle: float, samples: int) -
         if process.poll() is not None:
             error = process.stderr.read().strip()
             raise RuntimeError(f"{' '.join(command)} exited: {error}")
+        window = visible_window(process.pid)
         readings = []
         for _ in range(samples):
             readings.append(sample_process(process.pid))
             time.sleep(1)
         return {
             "pid": process.pid,
+            "visible_window": window,
             "rss_mib": round(statistics.median(row[0] for row in readings) / 1024, 2),
             "cpu_percent": round(statistics.median(row[1] for row in readings), 2),
             "elapsed_seconds": round(time.monotonic() - started, 2),

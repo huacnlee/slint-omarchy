@@ -1,0 +1,60 @@
+import { Palette } from "theme.slint";
+import { Label, OmAlignedIcon } from "base.slint";
+
+export struct TreeRow { id: string, label: string, depth: int, folder: bool, expanded: bool, disabled: bool }
+
+// The caller supplies visible rows and owns expansion, cursor and selection.
+export component OmTree inherits Rectangle {
+    in property <[TreeRow]> rows;
+    in property <int> cursor: 0;
+    in property <string> selected-id: "";
+    in property <string> accessible-name: "Files";
+    callback activate(int);
+    callback move(int);
+    callback left;
+    callback right;
+    width: 440px;
+    height: root.rows.length * 32px;
+    background: Palette.foreground.with-alpha(0.04);
+    accessible-role: tree;
+    accessible-label: root.accessible-name;
+    accessible-item-count: root.rows.length;
+    accessible-delegate-focus: root.cursor;
+    forward-focus: tree-focus;
+
+    for row[index] in root.rows : Rectangle {
+        y: index * 32px;
+        height: 32px;
+        background: root.selected-id == row.id ? Palette.foreground.with-alpha(0.18) : (!row.disabled && tree-touch.has-hover) || (tree-focus.has-focus && root.cursor == index) ? Palette.foreground.with-alpha(0.08) : transparent;
+        border-width: tree-focus.has-focus && root.cursor == index ? 1px : 0px;
+        border-color: Palette.accent;
+        opacity: row.disabled ? 0.45 : 1;
+        accessible-role: list-item;
+        accessible-label: row.label;
+        accessible-description: row.folder ? "Folder" : "File";
+        accessible-enabled: !row.disabled;
+        accessible-item-selectable: !row.disabled;
+        accessible-item-selected: root.selected-id == row.id;
+        accessible-item-index: index + 1;
+        accessible-expandable: row.folder;
+        accessible-expanded: row.expanded;
+        accessible-action-default => { if (!row.disabled) { root.activate(index); } }
+        HorizontalLayout {
+            padding-left: 8px + row.depth * 18px; spacing: 8px;
+            OmAlignedIcon { show: row.folder; glyph: row.expanded ? @image-url("../assets/icons/chevron-down.svg") : @image-url("../assets/icons/chevron-right.svg"); }
+            Label { text: row.label; }
+        }
+        tree-touch := TouchArea { clicked => { if (!row.disabled) { root.activate(index); tree-focus.focus(); } } }
+    }
+    tree-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.DownArrow) { root.move(1); return accept; }
+            if (event.text == Key.UpArrow) { root.move(-1); return accept; }
+            if (event.text == Key.LeftArrow) { root.left(); return accept; }
+            if (event.text == Key.RightArrow) { root.right(); return accept; }
+            if (event.text == Key.Return || event.text == " ") { root.activate(root.cursor); return accept; }
+            return reject;
+        }
+    }
+}

@@ -1,0 +1,246 @@
+import { Palette } from "theme.slint";
+import { Label, OmButton } from "base.slint";
+
+export struct MenuItemData { value: string, label: string, icon-name: string, enabled: bool, submenu: bool }
+
+export component OmLink inherits Rectangle {
+    in property <string> label;
+    in property <bool> disabled: false;
+    callback activated;
+    width: caption.preferred-width + 8px;
+    height: 30px;
+    opacity: disabled ? 0.45 : 1;
+    background: link-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: link-focus.has-focus ? Palette.accent : transparent;
+    forward-focus: link-focus;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: !root.disabled;
+    accessible-action-default => { if (!root.disabled) { root.activated(); } }
+    caption := Label {
+        x: 4px; width: parent.width - 8px; height: parent.height;
+        text: root.label;
+        color: link-touch.has-hover && !root.disabled ? Palette.bright : Palette.accent;
+    }
+    Rectangle {
+        x: 4px; y: parent.height - 7px; width: parent.width - 8px; height: 1px;
+        background: root.disabled ? Palette.muted : link-touch.has-hover ? Palette.bright : Palette.accent;
+    }
+    link-touch := TouchArea { clicked => { if (!root.disabled) { root.activated(); } } }
+    link-focus := FocusScope {
+        width: 0px;
+        enabled: !root.disabled;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.activated(); return accept; }
+            return reject;
+        }
+    }
+}
+
+export component OmMenuItem inherits Rectangle {
+    in property <string> label;
+    in property <string> icon-name: "";
+    in property <bool> submenu: false;
+    in property <bool> selected;
+    in property <bool> disabled;
+    callback activated;
+    callback hovered;
+    height: 32px;
+    background: (item-touch.has-hover || root.selected) && !root.disabled ? Palette.foreground.with-alpha(0.08) : transparent;
+    opacity: root.disabled ? 0.45 : 1;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: !root.disabled;
+    accessible-action-default => { if (!root.disabled) { root.activated(); } }
+    if root.icon-name != "" : Image {
+        x: 10px; y: (parent.height - 16px) / 2; width: 16px; height: 16px;
+        source: root.icon-name == "plus" ? @image-url("../assets/icons/plus.svg") : @image-url("../assets/icons/star.svg");
+        colorize: Palette.foreground;
+    }
+    Label { x: root.icon-name != "" ? 34px : 10px; width: parent.width - (root.icon-name != "" ? 44px : 20px) - (root.submenu ? 24px : 0px); height: parent.height; text: root.label; }
+    if root.submenu : Image { x: parent.width - 24px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
+    item-touch := TouchArea {
+        clicked => { if (!root.disabled) { root.activated(); } }
+        changed has-hover => { if (self.has-hover && !root.disabled) { root.hovered(); } }
+    }
+}
+
+export component OmMenu inherits Rectangle {
+    in property <string> trigger-label: "Menu";
+    in property <[MenuItemData]> items: [];
+    in property <[MenuItemData]> submenu-items: [];
+    in property <length> menu-width: 220px;
+    in property <length> submenu-width: 200px;
+    callback chosen(string);
+    callback chosen-value(string);
+    private property <bool> submenu-open: false;
+    private property <int> cursor: -1;
+    private property <int> submenu-parent: 0;
+    private property <int> scan-index: -1;
+    private property <int> scan-direction: 1;
+    private property <int> scan-remaining: 0;
+    private property <bool> scan-submenu: false;
+    private property <bool> activate-after-scan: false;
+    function scan-one() {
+        if (root.scan-remaining <= 0) { return; }
+        if (root.scan-submenu) {
+            if (root.submenu-items.length == 0) { root.scan-remaining = 0; root.cursor = -1; return; }
+            root.scan-index = Math.mod(root.scan-index + root.scan-direction + root.submenu-items.length, root.submenu-items.length);
+            if (root.submenu-items[root.scan-index].enabled) { root.cursor = root.scan-index; root.scan-remaining = 0; return; }
+        } else {
+            if (root.items.length == 0) { root.scan-remaining = 0; root.cursor = -1; return; }
+            root.scan-index = Math.mod(root.scan-index + root.scan-direction + root.items.length, root.items.length);
+            if (root.items[root.scan-index].enabled) { root.cursor = root.scan-index; root.scan-remaining = 0; return; }
+        }
+        root.scan-remaining -= 1;
+        if (root.scan-remaining == 0) { root.cursor = -1; }
+    }
+    function scan-from(index: int, direction: int, in-submenu: bool) {
+        root.scan-index = index < 0 && direction < 0 ? 0 : index;
+        root.scan-direction = direction;
+        root.scan-submenu = in-submenu;
+        root.scan-remaining = in-submenu ? root.submenu-items.length : root.items.length;
+        root.scan-one();
+    }
+    width: root.menu-width;
+    height: 32px;
+    menu-trigger := OmButton { x: 0px; width: root.menu-width; label: root.trigger-label; chevron: true; clicked => { root.activate-after-scan = false; root.submenu-open = false; root.cursor = -1; root.scan-from(-1, 1, false); if (root.items.length > 0) { menu-popup.show(); } } }
+    callback activate-main(int);
+    activate-main(index) => {
+        if (index >= 0 && index < root.items.length && root.items[index].enabled) {
+            if (root.items[index].submenu) {
+                root.submenu-parent = index;
+                root.submenu-open = true;
+                root.cursor = -1;
+                root.scan-from(-1, 1, true);
+            } else {
+                root.chosen(root.items[index].label);
+                root.chosen-value(root.items[index].value);
+                menu-popup.close();
+                menu-trigger.focus();
+            }
+        }
+    }
+    callback activate-submenu(int);
+    activate-submenu(index) => {
+        if (index >= 0 && index < root.submenu-items.length && root.submenu-items[index].enabled) {
+            root.chosen(root.submenu-items[index].label);
+            root.chosen-value(root.submenu-items[index].value);
+            menu-popup.close();
+            menu-trigger.focus();
+        }
+    }
+    menu-popup := PopupWindow {
+        x: 0px; y: root.height;
+        width: root.menu-width + (root.submenu-open ? root.submenu-width : 0px);
+        height: max(root.items.length * 32px, root.submenu-open ? root.submenu-parent * 32px + root.submenu-items.length * 32px : 0px);
+        close-policy: close-on-click-outside;
+        forward-focus: menu-focus;
+        Rectangle {
+            x: 0px; y: 0px; width: root.menu-width; height: root.items.length * 32px;
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            VerticalLayout {
+                for item[index] in root.items : OmMenuItem {
+                    label: item.label;
+                    icon-name: item.icon-name;
+                    submenu: item.submenu;
+                    disabled: !item.enabled;
+                    selected: (!root.submenu-open && root.cursor == index) || (root.submenu-open && root.submenu-parent == index);
+                    activated => { root.activate-main(index); }
+                    hovered => {
+                        root.scan-remaining = 0;
+                        root.activate-after-scan = false;
+                        if (root.submenu-open) { root.submenu-open = false; }
+                        root.cursor = index;
+                        if (item.submenu) { root.activate-main(index); }
+                    }
+                }
+            }
+        }
+        if root.submenu-open : Rectangle {
+            x: root.menu-width; y: root.submenu-parent * 32px; width: root.submenu-width; height: root.submenu-items.length * 32px;
+            background: Palette.surface;
+            border-width: 1px; border-color: Palette.border;
+            VerticalLayout {
+                for item[index] in root.submenu-items : OmMenuItem {
+                    label: item.label;
+                    icon-name: item.icon-name;
+                    disabled: !item.enabled;
+                    selected: root.cursor == index;
+                    activated => { root.activate-submenu(index); }
+                    hovered => { root.scan-remaining = 0; root.activate-after-scan = false; root.cursor = index; }
+                }
+            }
+        }
+        menu-focus := FocusScope {
+            width: 0px;
+            key-pressed(event) => {
+                if (event.text == Key.Escape || event.text == Key.LeftArrow) {
+                    root.activate-after-scan = false;
+                    if (root.submenu-open) { root.scan-remaining = 0; root.submenu-open = false; root.cursor = root.submenu-parent; }
+                    else if (event.text == Key.Escape) { menu-popup.close(); menu-trigger.focus(); }
+                    else { return reject; }
+                    return accept;
+                }
+                if (event.text == Key.RightArrow && !root.submenu-open && root.cursor >= 0 && root.cursor < root.items.length && root.items[root.cursor].enabled && root.items[root.cursor].submenu) { root.activate-main(root.cursor); return accept; }
+                if (event.text == Key.DownArrow) {
+                    root.activate-after-scan = false;
+                    root.scan-from(root.cursor, 1, root.submenu-open);
+                    return accept;
+                }
+                if (event.text == Key.UpArrow) {
+                    root.activate-after-scan = false;
+                    root.scan-from(root.cursor, -1, root.submenu-open);
+                    return accept;
+                }
+                if (event.text == Key.Return || event.text == " ") {
+                    if (root.scan-remaining > 0) { root.activate-after-scan = true; }
+                    else if (root.submenu-open) { root.activate-submenu(root.cursor); }
+                    else { root.activate-main(root.cursor); }
+                    return accept;
+                }
+                return reject;
+            }
+        }
+        Timer { interval: 1ms; running: root.scan-remaining > 0; triggered => { root.scan-one(); } }
+        Timer {
+            interval: 1ms;
+            running: root.activate-after-scan && root.scan-remaining == 0;
+            triggered => {
+                root.activate-after-scan = false;
+                if (root.submenu-open) { root.activate-submenu(root.cursor); }
+                else { root.activate-main(root.cursor); }
+            }
+        }
+    }
+}
+
+export component OmToggle inherits Rectangle {
+    in property <string> label;
+    in property <bool> star: false;
+    in-out property <bool> pressed: false;
+    callback toggled;
+    height: 32px;
+    width: caption.preferred-width + (root.star ? 52px : 20px);
+    background: root.pressed ? Palette.foreground.with-alpha(0.18) : toggle-touch.pressed ? Palette.foreground.with-alpha(0.22) : toggle-touch.has-hover || toggle-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: toggle-focus.has-focus ? Palette.accent : toggle-touch.has-hover ? Palette.foreground.with-alpha(0.4) : Palette.border;
+    forward-focus: toggle-focus;
+    accessible-role: checkbox;
+    accessible-label: root.label;
+    accessible-checkable: true;
+    accessible-checked: root.pressed;
+    accessible-action-default => { root.pressed = !root.pressed; root.toggled(); }
+    caption := Label { x: 10px; width: parent.width - (root.star ? 42px : 20px); height: parent.height; text: root.label; }
+    if root.star : Image { x: parent.width - 26px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: @image-url("../assets/icons/star.svg"); colorize: root.pressed ? Palette.accent : Palette.foreground; }
+    toggle-touch := TouchArea { clicked => { root.pressed = !root.pressed; root.toggled(); toggle-focus.focus(); } }
+    toggle-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.pressed = !root.pressed; root.toggled(); return accept; }
+            return reject;
+        }
+    }
+}

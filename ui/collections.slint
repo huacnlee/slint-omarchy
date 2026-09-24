@@ -1,0 +1,66 @@
+import { ListView } from "std-widgets.slint";
+import { Label } from "base.slint";
+import { OmScrollbar } from "display.slint";
+import { Palette } from "theme.slint";
+
+export struct VirtualTextRow { primary: string, secondary: string, row-height: length }
+
+// Slint requires a ListView's direct child to be one repeater, so callers
+// supply text rows while this control owns virtualization and scrolling.
+export component OmVirtualTextList inherits Rectangle {
+    in property <[VirtualTextRow]> rows;
+    in property <string> accessible-name: "Items";
+    in property <length> total-height: 0px;
+    in-out property <length> viewport-y: 0px;
+    callback scroll-to-first;
+    callback scroll-to-last;
+
+    height: 300px;
+    background: transparent;
+    clip: true;
+    scroll-to-first => { root.viewport-y = 0px; }
+    scroll-to-last => { root.viewport-y = min(0px, root.height - root.total-height); }
+
+    list-viewport := Rectangle {
+        x: 0px; y: 0px;
+        width: max(0px, parent.width - scrollbar.width - 2px);
+        height: parent.height;
+        clip: true;
+        background: transparent;
+        list := ListView {
+            width: parent.width;
+            height: parent.height;
+            content-height: root.total-height;
+            content-y <=> root.viewport-y;
+            vertical-scrollbar-policy: ScrollBarPolicy.always-off;
+            horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+            accessible-label: root.accessible-name;
+            accessible-item-count: root.rows.length;
+
+            for row[index] in root.rows : Rectangle {
+            height: max(28px, row.row-height);
+            width: parent.width;
+            background: transparent;
+            accessible-role: list-item;
+            accessible-label: row.primary;
+            accessible-description: row.secondary;
+            accessible-item-index: index + 1;
+            HorizontalLayout {
+                padding-left: 10px; padding-right: 10px;
+                VerticalLayout {
+                    alignment: center; spacing: 2px;
+                    Label { text: row.primary; color: Palette.foreground; }
+                    if row.secondary != "" : Label { text: row.secondary; color: Palette.muted; font-size: 11px; }
+                }
+            }
+            }
+        }
+    }
+    scrollbar := OmScrollbar {
+        x: parent.width - self.width;
+        height: parent.height;
+        viewport-y <=> root.viewport-y;
+        content-height: root.total-height;
+        page-height: root.height;
+    }
+}
