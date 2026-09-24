@@ -75,18 +75,45 @@ export component OmMenu inherits Rectangle {
     callback chosen(string);
     callback chosen-value(string);
     private property <bool> submenu-open: false;
-    private property <int> cursor: 0;
+    private property <int> cursor: -1;
     private property <int> submenu-parent: 0;
+    private property <int> scan-index: -1;
+    private property <int> scan-direction: 1;
+    private property <int> scan-remaining: 0;
+    private property <bool> scan-submenu: false;
+    private property <bool> activate-after-scan: false;
+    function scan-one() {
+        if (root.scan-remaining <= 0) { return; }
+        if (root.scan-submenu) {
+            if (root.submenu-items.length == 0) { root.scan-remaining = 0; root.cursor = -1; return; }
+            root.scan-index = Math.mod(root.scan-index + root.scan-direction + root.submenu-items.length, root.submenu-items.length);
+            if (root.submenu-items[root.scan-index].enabled) { root.cursor = root.scan-index; root.scan-remaining = 0; return; }
+        } else {
+            if (root.items.length == 0) { root.scan-remaining = 0; root.cursor = -1; return; }
+            root.scan-index = Math.mod(root.scan-index + root.scan-direction + root.items.length, root.items.length);
+            if (root.items[root.scan-index].enabled) { root.cursor = root.scan-index; root.scan-remaining = 0; return; }
+        }
+        root.scan-remaining -= 1;
+        if (root.scan-remaining == 0) { root.cursor = -1; }
+    }
+    function scan-from(index: int, direction: int, in-submenu: bool) {
+        root.scan-index = index < 0 && direction < 0 ? 0 : index;
+        root.scan-direction = direction;
+        root.scan-submenu = in-submenu;
+        root.scan-remaining = in-submenu ? root.submenu-items.length : root.items.length;
+        root.scan-one();
+    }
     width: root.menu-width;
     height: 32px;
-    menu-trigger := OmButton { x: 0px; width: root.menu-width; label: root.trigger-label; chevron: true; clicked => { root.submenu-open = false; root.cursor = 0; if (root.items.length > 0) { menu-popup.show(); } } }
+    menu-trigger := OmButton { x: 0px; width: root.menu-width; label: root.trigger-label; chevron: true; clicked => { root.activate-after-scan = false; root.submenu-open = false; root.cursor = -1; root.scan-from(-1, 1, false); if (root.items.length > 0) { menu-popup.show(); } } }
     callback activate-main(int);
     activate-main(index) => {
         if (index >= 0 && index < root.items.length && root.items[index].enabled) {
             if (root.items[index].submenu) {
                 root.submenu-parent = index;
                 root.submenu-open = true;
-                root.cursor = 0;
+                root.cursor = -1;
+                root.scan-from(-1, 1, true);
             } else {
                 root.chosen(root.items[index].label);
                 root.chosen-value(root.items[index].value);
@@ -123,6 +150,8 @@ export component OmMenu inherits Rectangle {
                     selected: (!root.submenu-open && root.cursor == index) || (root.submenu-open && root.submenu-parent == index);
                     activated => { root.activate-main(index); }
                     hovered => {
+                        root.scan-remaining = 0;
+                        root.activate-after-scan = false;
                         if (root.submenu-open) { root.submenu-open = false; }
                         root.cursor = index;
                         if (item.submenu) { root.activate-main(index); }
@@ -141,7 +170,7 @@ export component OmMenu inherits Rectangle {
                     disabled: !item.enabled;
                     selected: root.cursor == index;
                     activated => { root.activate-submenu(index); }
-                    hovered => { root.cursor = index; }
+                    hovered => { root.scan-remaining = 0; root.activate-after-scan = false; root.cursor = index; }
                 }
             }
         }
@@ -149,24 +178,40 @@ export component OmMenu inherits Rectangle {
             width: 0px;
             key-pressed(event) => {
                 if (event.text == Key.Escape || event.text == Key.LeftArrow) {
-                    if (root.submenu-open) { root.submenu-open = false; root.cursor = root.submenu-parent; }
+                    root.activate-after-scan = false;
+                    if (root.submenu-open) { root.scan-remaining = 0; root.submenu-open = false; root.cursor = root.submenu-parent; }
                     else if (event.text == Key.Escape) { menu-popup.close(); menu-trigger.focus(); }
                     else { return reject; }
                     return accept;
                 }
-                if (event.text == Key.RightArrow && !root.submenu-open && root.cursor >= 0 && root.cursor < root.items.length && root.items[root.cursor].submenu) { root.activate-main(root.cursor); return accept; }
+                if (event.text == Key.RightArrow && !root.submenu-open && root.cursor >= 0 && root.cursor < root.items.length && root.items[root.cursor].enabled && root.items[root.cursor].submenu) { root.activate-main(root.cursor); return accept; }
                 if (event.text == Key.DownArrow) {
-                    if (root.submenu-open && root.submenu-items.length > 0) { root.cursor = Math.mod(root.cursor + 1, root.submenu-items.length); }
-                    else if (!root.submenu-open && root.items.length > 0) { root.cursor = Math.mod(root.cursor + 1, root.items.length); }
+                    root.activate-after-scan = false;
+                    root.scan-from(root.cursor, 1, root.submenu-open);
                     return accept;
                 }
                 if (event.text == Key.UpArrow) {
-                    if (root.submenu-open && root.submenu-items.length > 0) { root.cursor = Math.mod(root.cursor + root.submenu-items.length - 1, root.submenu-items.length); }
-                    else if (!root.submenu-open && root.items.length > 0) { root.cursor = Math.mod(root.cursor + root.items.length - 1, root.items.length); }
+                    root.activate-after-scan = false;
+                    root.scan-from(root.cursor, -1, root.submenu-open);
                     return accept;
                 }
-                if (event.text == Key.Return || event.text == " ") { if (root.submenu-open) { root.activate-submenu(root.cursor); } else { root.activate-main(root.cursor); } return accept; }
+                if (event.text == Key.Return || event.text == " ") {
+                    if (root.scan-remaining > 0) { root.activate-after-scan = true; }
+                    else if (root.submenu-open) { root.activate-submenu(root.cursor); }
+                    else { root.activate-main(root.cursor); }
+                    return accept;
+                }
                 return reject;
+            }
+        }
+        Timer { interval: 1ms; running: root.scan-remaining > 0; triggered => { root.scan-one(); } }
+        Timer {
+            interval: 1ms;
+            running: root.activate-after-scan && root.scan-remaining == 0;
+            triggered => {
+                root.activate-after-scan = false;
+                if (root.submenu-open) { root.activate-submenu(root.cursor); }
+                else { root.activate-main(root.cursor); }
             }
         }
     }

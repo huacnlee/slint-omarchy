@@ -28,7 +28,7 @@ export component Settings inherits Window {
 }
 ```
 
-The [UI architecture](docs/architecture.md) explains the public control boundary, state ownership, and layout contract. Gallery-specific forms and sample split panes stay in `ui/gallery_examples.slint`.
+The [UI architecture](docs/architecture.md) explains the public control boundary, state ownership, and layout contract. Gallery-specific forms and sample pane content stay in `ui/gallery_examples.slint` and `ui/gallery.slint`; the reusable dividers are exported as `OmHorizontalSplit` and `OmVerticalSplit`.
 
 [`examples/reuse.rs`](examples/reuse.rs) is a standalone window that imports the component library. Verify the public Slint API with `cargo check --example reuse`.
 

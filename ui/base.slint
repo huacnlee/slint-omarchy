@@ -78,6 +78,7 @@ export component OmButton inherits Rectangle {
 
 export component Card inherits Rectangle {
     in property <string> heading;
+    out property <length> content-width: layout.width;
     height: layout.preferred-height + 36px;
     background: Palette.surface;
     border-width: 1px;

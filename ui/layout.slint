@@ -39,22 +39,31 @@ export component OmNavRow inherits Rectangle {
 export component OmAccordionItem inherits Rectangle {
     in property <string> title;
     in property <string> description;
-    in property <length> panel-height: 74px;
+    in property <length> panel-height: 32px;
     in-out property <bool> expanded: false;
-    height: root.expanded ? max(42px + root.panel-height, description-label.y + description-label.preferred-height + 14px) : 42px;
-    border-width: 1px; border-color: Palette.border;
+    height: root.expanded ? 42px + max(root.panel-height, description-label.preferred-height + 16px) : 42px;
+    // The accordion is a sequence of sections, not a stack of outlined buttons.
+    Rectangle { x: 0px; y: 0px; width: parent.width; height: 1px; background: Palette.border; }
     Rectangle {
         x: 0px; y: 0px; width: parent.width; height: 42px;
-        background: trigger.has-hover || item-focus.has-focus ? Palette.foreground.with-alpha(0.08) : Palette.foreground.with-alpha(0.04);
-        Label { x: 12px; y: 0px; width: parent.width - 48px; height: parent.height; text: root.title; color: Palette.bright; font-weight: 600; }
-        Image { x: parent.width - 28px; y: (parent.height - 18px) / 2; width: 18px; height: 18px; source: root.expanded ? @image-url("../assets/icons/chevron-down.svg") : @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
+        background: trigger.has-hover || item-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+        HorizontalLayout {
+            x: 0px; y: 0px; width: parent.width; height: parent.height;
+            padding-left: 8px; padding-right: 8px;
+            Label { horizontal-stretch: 1; height: parent.height; text: root.title; color: Palette.bright; font-weight: 600; }
+            Rectangle {
+                width: 16px; height: parent.height;
+                Image { y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.expanded ? @image-url("../assets/icons/chevron-down.svg") : @image-url("../assets/icons/chevron-right.svg"); colorize: Palette.muted; }
+            }
+        }
         trigger := TouchArea { clicked => { root.expanded = !root.expanded; item-focus.focus(); } }
     }
     description-label := Text {
-        x: 12px; y: 56px; width: parent.width - 24px; height: self.preferred-height;
+        x: 10px; y: 50px; width: parent.width - 20px; height: self.preferred-height;
         visible: root.expanded;
         text: root.description; color: Palette.foreground; font-family: "monospace"; font-size: 13px; wrap: word-wrap;
     }
+    if root.expanded : Rectangle { y: parent.height - 1px; width: parent.width; height: 1px; background: Palette.border; }
     forward-focus: item-focus;
     accessible-role: button;
     accessible-label: root.title;

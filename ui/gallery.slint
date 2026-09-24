@@ -1,6 +1,6 @@
 import { ListView, ScrollView } from "std-widgets.slint";
-import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmCollapsible, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, TreeRow, OmTree, VirtualTextRow, OmVirtualTextList, OmColorPicker, OmRichText, OmToast, OmSheet, OmSheetTrigger, OmTitleBar } from "omarchy.slint";
-import { ProjectRow, OmProjectTable, OmWorkspaceForm, OmResetDialogForm, OmHorizontalSplit, OmVerticalSplit, OmTextView } from "gallery_examples.slint";
+import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmCollapsible, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, TreeRow, OmTree, VirtualTextRow, OmVirtualTextList, OmColorPicker, OmRichText, OmToast, OmSheet, OmSheetTrigger, OmTitleBar, OmHorizontalSplit, OmVerticalSplit } from "omarchy.slint";
+import { ProjectRow, OmProjectTable, OmWorkspaceForm, OmResetDialogForm, OmTextView } from "gallery_examples.slint";
 export { Palette } from "omarchy.slint";
 
 export struct NavItem { name: string, label: string, description: string, category: string, implemented: bool }
@@ -693,11 +693,15 @@ export component Gallery inherits Window {
                                 }
                                 Label { text: "Open Website refresh, open its task, edit the note, then go Back and Forward. The note stays on the task page."; color: Palette.muted; }
                             }
-                            if root.current-page == "accordion" : Card {
+                            if root.current-page == "accordion" : accordion-card := Card {
                                 heading: "Accordion";
-                                OmAccordionItem { title: "Appearance"; description: "Uses the current Omarchy system theme, with Tokyo Night as the fallback. Change the theme from the application menu."; expanded <=> root.appearance-expanded; }
-                                OmAccordionItem { title: "Keyboard navigation"; description: "Tab moves between controls. Return or Space activates the focused control. Escape closes an open menu or dialog."; expanded <=> root.keyboard-expanded; }
-                                OmAccordionItem { title: "Workspace data"; description: "Changes in this gallery stay in memory for this session. Resetting an example does not remove files on disk."; expanded <=> root.data-expanded; }
+                                VerticalLayout {
+                                    width: accordion-card.content-width;
+                                    spacing: 0px;
+                                    OmAccordionItem { width: parent.width; title: "Appearance"; description: "Uses the current Omarchy system theme, with Tokyo Night as the fallback. Change the theme from the application menu."; expanded <=> root.appearance-expanded; }
+                                    OmAccordionItem { width: parent.width; title: "Keyboard navigation"; description: "Tab moves between controls. Return or Space activates the focused control. Escape closes an open menu or dialog."; expanded <=> root.keyboard-expanded; }
+                                    OmAccordionItem { width: parent.width; title: "Workspace data"; description: "Changes in this gallery stay in memory for this session. Resetting an example does not remove files on disk."; expanded <=> root.data-expanded; }
+                                }
                             }
                             if root.current-page == "collapsible" : Card {
                                 heading: "Collapsible";
@@ -882,24 +886,45 @@ export component Gallery inherits Window {
                             if root.current-page == "resizable" : Card {
                                 heading: "Resizable panels";
                                 Label { text: "Horizontal"; }
-                                OmHorizontalSplit {
+                                horizontal-split := OmHorizontalSplit {
+                                    width: parent.width;
+                                    height: 300px;
                                     split-size <=> root.horizontal-split;
-                                    first-title: "Documents";
-                                    first-line: "Project brief.md";
-                                    second-line: "Meeting notes.md";
-                                    second-title: "Project brief";
-                                    second-description: "A focused desktop workspace with room to inspect a document.";
-                                    second-hint: "Drag the divider to adjust the navigation and preview panes.";
                                     divider-label: "Documents pane width";
+                                    Rectangle {
+                                        x: 0px; width: horizontal-split.first-size; height: parent.height;
+                                        background: Palette.foreground.with-alpha(0.04);
+                                        clip: true;
+                                        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: "Documents"; color: Palette.bright; }
+                                        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: "Project brief.md"; }
+                                        Label { x: 14px; y: 74px; width: max(0px, parent.width - 28px); height: 20px; text: "Meeting notes.md"; }
+                                    }
+                                    Rectangle {
+                                        x: horizontal-split.second-offset; width: horizontal-split.second-size; height: parent.height;
+                                        clip: true;
+                                        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: "Project brief"; color: Palette.bright; font-weight: 700; }
+                                        Text { x: 14px; y: 46px; width: max(0px, parent.width - 28px); height: 48px; text: "A focused desktop workspace with room to inspect a document."; color: Palette.foreground; font-size: 13px; wrap: word-wrap; }
+                                        Text { x: 14px; y: 110px; width: max(0px, parent.width - 28px); height: 48px; text: "Drag the divider to adjust the navigation and preview panes."; color: Palette.muted; font-size: 12px; wrap: word-wrap; }
+                                    }
                                 }
                                 Label { text: "Vertical"; }
-                                OmVerticalSplit {
+                                vertical-split := OmVerticalSplit {
+                                    width: parent.width;
+                                    height: 240px;
                                     split-size <=> root.vertical-split;
-                                    first-title: "Preview";
-                                    first-line: "The workspace is ready for review.";
-                                    second-title: "Activity";
-                                    second-line: "All changes saved · No pending tasks";
                                     divider-label: "Preview pane height";
+                                    Rectangle {
+                                        x: 0px; y: 0px; width: parent.width; height: vertical-split.first-size;
+                                        clip: true;
+                                        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: "Preview"; color: Palette.bright; }
+                                        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: "The workspace is ready for review."; }
+                                    }
+                                    Rectangle {
+                                        x: 0px; y: vertical-split.second-offset; width: parent.width; height: vertical-split.second-size;
+                                        clip: true;
+                                        Label { x: 14px; y: 14px; width: max(0px, parent.width - 28px); height: 20px; text: "Activity"; color: Palette.bright; }
+                                        Label { x: 14px; y: 44px; width: max(0px, parent.width - 28px); height: 20px; text: "All changes saved · No pending tasks"; color: Palette.muted; }
+                                    }
                                 }
                             }
                             if root.current-page == "badge" : Card {

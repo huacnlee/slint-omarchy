@@ -46,11 +46,11 @@ export component OmAlert inherits Rectangle {
     background: tone.with-alpha(0.06);
     border-width: 1px;
     border-color: tone.with-alpha(0.35);
-    OmAlignedIcon { x: 10px; y: (parent.height - self.height) / 2; glyph: root.icon; tone: root.tone; }
+    Image { x: 10px; y: (parent.height - self.height) / 2; width: 14px; height: 14px; source: root.icon; colorize: root.tone; }
     message-text := Label {
-        x: 36px;
+        x: 34px;
         y: 10px;
-        width: max(0px, parent.width - 46px);
+        width: max(0px, parent.width - 44px);
         height: max(18px, self.preferred-height);
         text: root.message;
         color: root.tone;
