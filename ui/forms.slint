@@ -13,6 +13,8 @@ export component OmCheckBox inherits Rectangle {
     height: 28px;
     width: row.preferred-width;
     background: !root.disabled && (check-touch.has-hover || check-focus.has-focus) ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: check-focus.has-focus ? Palette.accent : transparent;
     opacity: root.disabled ? 0.45 : 1;
     forward-focus: check-focus;
     accessible-role: checkbox;
@@ -36,7 +38,7 @@ export component OmCheckBox inherits Rectangle {
         }
         Label { text: root.label; }
     }
-    check-touch := TouchArea { enabled: !root.disabled; clicked => { root.checked = root.mixed || !root.checked; root.mixed = false; root.toggled(); } }
+    check-touch := TouchArea { enabled: !root.disabled; clicked => { check-focus.focus(); root.checked = root.mixed || !root.checked; root.mixed = false; root.toggled(); } }
     check-focus := FocusScope {
         width: 0px;
         enabled: !root.disabled;
@@ -51,18 +53,23 @@ export component OmCheckBox inherits Rectangle {
 export component OmSwitch inherits Rectangle {
     in property <string> label;
     in-out property <bool> checked;
+    in property <bool> disabled: false;
     in property <bool> cancel-on-escape: false;
     callback toggled;
     callback cancelled;
     height: 34px;
     width: switch-row.preferred-width;
-    background: switch-touch.has-hover || switch-focus.has-focus ? Palette.foreground.with-alpha(0.08) : transparent;
+    background: !root.disabled && (switch-touch.has-hover || switch-focus.has-focus) ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: switch-focus.has-focus ? Palette.accent : transparent;
+    opacity: root.disabled ? 0.45 : 1;
     forward-focus: switch-focus;
     accessible-role: switch;
     accessible-label: root.label;
     accessible-checkable: true;
     accessible-checked: root.checked;
-    accessible-action-default => { root.checked = !root.checked; root.toggled(); }
+    accessible-enabled: !root.disabled;
+    accessible-action-default => { if (!root.disabled) { root.checked = !root.checked; root.toggled(); } }
     switch-row := HorizontalLayout {
         x: 0px; y: 0px; width: parent.width; height: parent.height;
         padding-left: 5px; padding-right: 5px;
@@ -79,9 +86,10 @@ export component OmSwitch inherits Rectangle {
         }
         Label { text: root.label; }
     }
-    switch-touch := TouchArea { clicked => { root.checked = !root.checked; root.toggled(); } }
+    switch-touch := TouchArea { enabled: !root.disabled; clicked => { switch-focus.focus(); root.checked = !root.checked; root.toggled(); } }
     switch-focus := FocusScope {
         width: 0px;
+        enabled: !root.disabled;
         key-pressed(event) => {
             if (event.text == Key.Escape && root.cancel-on-escape) { root.cancelled(); return accept; }
             if (event.text == " " || event.text == "\n") { root.checked = !root.checked; root.toggled(); return accept; }
@@ -102,6 +110,8 @@ export component OmRadioGroup inherits Rectangle {
         y: index * 32px;
         height: 30px;
         background: (radio-touch.has-hover || (radio-focus.has-focus && root.choice == index)) ? Palette.foreground.with-alpha(0.08) : transparent;
+        border-width: 1px;
+        border-color: radio-focus.has-focus && root.choice == index ? Palette.accent : transparent;
         HorizontalLayout {
             x: 0px; y: 0px; width: parent.width; height: parent.height;
             padding-left: 4px; padding-right: 4px;
@@ -145,6 +155,7 @@ export component OmChoice inherits Rectangle {
     in property <string> unavailable-label: "Unavailable";
     in property <string> empty-label: "No matching workspaces";
     in-out property <bool> open: false;
+    private property <bool> popup-visible: choices-popup.is-open;
     in-out property <string> filter-text: "";
     in-out property <int> cursor: 0;
     callback search(string);
@@ -153,6 +164,10 @@ export component OmChoice inherits Rectangle {
     callback choose-index(int);
     callback next-cursor(int, int) -> int;
     callback move-cursor(int);
+    changed popup-visible => {
+        root.open = root.popup-visible;
+        if (!root.popup-visible) { choice-focus.focus(); }
+    }
     move-cursor(direction) => { root.cursor = root.next-cursor(root.cursor, direction); }
     open-popup => {
         if (!root.disabled) {
@@ -247,7 +262,7 @@ export component OmChoice inherits Rectangle {
                 }
                 for choice[i] in root.choices : Rectangle {
                     height: 28px;
-                    background: i == root.cursor || option-touch.has-hover ? Palette.foreground.with-alpha(0.08) : transparent;
+                    background: choice.enabled && (i == root.cursor || option-touch.has-hover) ? Palette.foreground.with-alpha(0.08) : transparent;
                     opacity: choice.enabled ? 1 : 0.45;
                     HorizontalLayout {
                         padding-left: 8px; padding-right: 8px;
@@ -255,7 +270,7 @@ export component OmChoice inherits Rectangle {
                         Rectangle { horizontal-stretch: 1; }
                         Label { text: choice.enabled ? "" : root.unavailable-label; color: Palette.muted; font-size: 11px; }
                     }
-                    option-touch := TouchArea { clicked => { root.choose-index(i); } }
+                    option-touch := TouchArea { enabled: choice.enabled; clicked => { root.choose-index(i); } }
                 }
                 if root.choices.length == 0 : Label { text: root.empty-label; color: Palette.muted; height: 28px; }
             }

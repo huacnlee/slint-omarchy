@@ -203,7 +203,7 @@ fn page_description(page: &str) -> &'static str {
         "toast" => "Brief feedback that leaves your current task in place.",
         "icon" => "Monochrome SVG icons that inherit the surrounding text color.",
         "avatar" => "Identify people and workspaces with a square image or initials.",
-        "text_view" => "Read structured documents with selectable text and links.",
+        "text_view" => "Read styled text with links and a composed document example.",
         "panel" => "A surface for a related group of settings or information.",
         "virtual_list" => "Browse a large activity log with variable-height rows.",
         "scrollbar" => "Drag the scroll thumb to move through a long activity log.",
@@ -423,12 +423,18 @@ fn main() -> Result<(), slint::PlatformError> {
         .collect::<Vec<_>>();
     app.set_pages(ModelRc::new(VecModel::from(pages)));
     let activities = (0..1_000)
-        .map(|index| ActivityItem {
-            title: format!("Event {:04} · Updated project notes", index + 1).into(),
-            detail: "Review requested by Alex Lee".into(),
-            tall: index % 5 == 0,
+        .map(|index| VirtualTextRow {
+            primary: format!("Event {:04} · Updated project notes", index + 1).into(),
+            secondary: if index % 5 == 0 {
+                "Review requested by Alex Lee"
+            } else {
+                ""
+            }
+            .into(),
+            row_height: if index % 5 == 0 { 44.0 } else { 28.0 },
         })
         .collect::<Vec<_>>();
+    app.set_activity_total_height(activities.iter().map(|row| row.row_height).sum());
     app.set_activities(ModelRc::new(VecModel::from(activities)));
     let choices = [
         ("personal", "Personal", true),

@@ -1,6 +1,7 @@
 import { Palette } from "theme.slint";
 import { Label, OmButton } from "base.slint";
 import { OmSlider } from "forms.slint";
+import { OmInput } from "inputs.slint";
 
 // The host owns Hex parsing and HSLA conversion. The component owns the
 // popup, focus return, and the editable presentation of that state.
@@ -31,6 +32,12 @@ export component OmColorPicker inherits Rectangle {
     callback change-color-channel(int, int, int, int);
     callback commit-color(string);
     callback cancel-color;
+    // PopupWindow can dismiss itself on an outside click. Keep the edit state
+    // and trigger focus in sync with that native dismissal path too.
+    private property <bool> popup-visible: color-popup.is-open;
+    changed popup-visible => {
+        if (!root.popup-visible && root.open) { root.cancel-color(); color-trigger.focus(); }
+    }
     public function focus-trigger() { color-trigger.focus(); }
 
     width: 320px;
@@ -41,6 +48,7 @@ export component OmColorPicker inherits Rectangle {
         show-swatch: true;
         swatch-color: root.open && !root.invalid ? root.preview-color : root.committed-color;
         outline: true;
+        selected: root.popup-visible;
         disabled: root.disabled;
         clicked => { root.open-color(); color-popup.show(); }
     }
@@ -56,31 +64,19 @@ export component OmColorPicker inherits Rectangle {
             VerticalLayout {
                 alignment: start; padding: 12px; spacing: 6px;
                 Label { text: root.hex-label; }
-                Rectangle {
+                color-input := OmInput {
+                    width: root.width - 24px;
                     height: 36px;
-                    background: Palette.foreground.with-alpha(0.04);
-                    border-width: 1px;
-                    border-color: root.invalid ? Palette.danger : color-input.has-focus ? Palette.accent : Palette.border;
-                    color-input := TextInput {
-                        x: 8px; y: 0px; width: parent.width - 16px; height: parent.height;
-                        text <=> root.draft-hex;
-                        color: Palette.foreground;
-                        horizontal-alignment: left;
-                        vertical-alignment: center;
-                        selection-background-color: Palette.foreground.with-alpha(0.35);
-                        edited => { root.preview-color-hex(self.text); }
-                        accepted => {
-                            root.commit-color(self.text);
-                            if (!root.invalid) { color-popup.close(); color-trigger.focus(); }
-                        }
-                        key-pressed(event) => {
-                            if (event.text == Key.Escape) {
-                                root.cancel-color(); color-popup.close(); color-trigger.focus();
-                                return accept;
-                            }
-                            return reject;
-                        }
+                    text <=> root.draft-hex;
+                    accessible-name: root.hex-label;
+                    invalid: root.invalid;
+                    cancel-on-escape: true;
+                    edited(value) => { root.preview-color-hex(value); }
+                    submitted(value) => {
+                        root.commit-color(value);
+                        if (!root.invalid) { color-popup.close(); color-trigger.focus(); }
                     }
+                    cancelled => { root.cancel-color(); color-popup.close(); color-trigger.focus(); }
                 }
                 if root.invalid : Label { text: root.invalid-label; color: Palette.danger; }
                 HorizontalLayout {
@@ -121,7 +117,7 @@ export component OmColorPicker inherits Rectangle {
         }
         color-focus := FocusScope {
             width: 0px;
-            focus-changed-event => { if (self.has-focus) { color-input.focus(); } }
+            focus-changed-event => { if (self.has-focus) { color-input.focus-editor(); } }
             key-pressed(event) => {
                 if (event.text == Key.Escape) {
                     root.cancel-color(); color-popup.close(); color-trigger.focus();

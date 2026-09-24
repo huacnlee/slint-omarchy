@@ -1,10 +1,10 @@
 slint::slint! {
-    import { Palette, OmButton, OmCheckBox, OmInput, OmSlider, OmTabs, OmProgress, OmAlert } from "../ui/omarchy.slint";
+    import { Palette, Label, OmButton, OmCheckBox, OmInput, OmSlider, OmTabs, OmProgress, OmAlert, OmTable, OmTableRow, OmTableCell } from "../ui/omarchy.slint";
 
     export component ReuseDemo inherits Window {
         title: "Reusable Slint Omarchy controls";
         width: 420px;
-        height: 360px;
+        height: 460px;
         background: Palette.background;
 
         in-out property <bool> checked: false;
@@ -22,6 +22,20 @@ slint::slint! {
             OmTabs { options: ["General", "Advanced"]; selected <=> root.active-tab; }
             OmProgress { value: root.volume; }
             OmAlert { neutral: true; message: "Components imported from ui/omarchy.slint"; }
+            OmTable {
+                width: 300px;
+                accessible-name: "Services";
+                OmTableRow {
+                    header: true; row-index: 1; accessible-name: "Service, State";
+                    OmTableCell { width: 140px; Label { text: "Service"; color: Palette.bright; font-weight: 600; } }
+                    OmTableCell { width: 140px; Label { text: "State"; color: Palette.bright; font-weight: 600; } }
+                }
+                OmTableRow {
+                    row-index: 2; accessible-name: "Indexer, Ready";
+                    OmTableCell { width: 140px; Label { text: "Indexer"; } }
+                    OmTableCell { width: 140px; Label { text: "Ready"; } }
+                }
+            }
         }
     }
 }

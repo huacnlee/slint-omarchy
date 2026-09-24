@@ -1,5 +1,47 @@
 import { Palette } from "theme.slint";
 import { Label, OmAlignedIcon, OmButton } from "base.slint";
+import { OmLink } from "actions.slint";
+import { OmTable, OmTableRow, OmTableCell } from "table.slint";
+
+export struct ProjectRow { name: string, status: string, owner: string, updated: string, files: string }
+
+// The sample project schema belongs to the gallery. The public table accepts
+// any row and cell composition; only this example knows these five columns.
+export component OmProjectTable inherits Rectangle {
+    in property <[ProjectRow]> rows;
+    in property <string> selected-project: "";
+    callback selected(string);
+    width: 640px;
+    height: 34px + root.rows.length * 34px;
+    background: transparent;
+
+    OmTable {
+        width: parent.width;
+        height: parent.height;
+        accessible-name: "Projects";
+        OmTableRow {
+            header: true;
+            accessible-name: "Name, Status, Owner, Updated, Files";
+            row-index: 1;
+            OmTableCell { width: 180px; Label { text: "Name"; color: Palette.bright; font-weight: 600; } }
+            OmTableCell { width: 70px; Label { text: "Status"; color: Palette.bright; font-weight: 600; } }
+            OmTableCell { width: 110px; Label { text: "Owner"; color: Palette.bright; font-weight: 600; } }
+            OmTableCell { width: 70px; Label { text: "Updated"; color: Palette.bright; font-weight: 600; } }
+            OmTableCell { width: max(70px, root.width - 478px); Label { text: "Files"; color: Palette.bright; font-weight: 600; } }
+        }
+        for project[index] in root.rows : OmTableRow {
+            selected: root.selected-project == project.name;
+            accessible-name: project.name + ", " + project.status + ", " + project.owner + ", " + project.updated + ", " + project.files;
+            row-index: index + 2;
+            activated => { root.selected(project.name); }
+            OmTableCell { width: 180px; Label { text: project.name; } }
+            OmTableCell { width: 70px; Label { text: project.status; color: project.status == "Active" ? Palette.success : project.status == "Review" ? Palette.warning : Palette.muted; } }
+            OmTableCell { width: 110px; Label { text: project.owner; } }
+            OmTableCell { width: 70px; Label { text: project.updated; color: Palette.muted; } }
+            OmTableCell { width: max(70px, root.width - 478px); Label { text: project.files; color: Palette.muted; } }
+        }
+    }
+}
 
 export component OmWorkspaceForm inherits Rectangle {
     in-out property <string> name;
@@ -209,6 +251,126 @@ export component OmVerticalSplit inherits Rectangle {
                 if (event.text == Key.DownArrow) { root.split-size = min(root.maximum-first-size, root.actual-split-size + 10px); return accept; }
                 return reject;
             }
+        }
+    }
+}
+
+// A compact article specimen. The caller supplies content and handles the
+// source action; no navigation or document data is owned by this view.
+export component OmTextView inherits Rectangle {
+    in property <string> title;
+    in property <string> introduction;
+    in property <string> section-heading;
+    in property <[string]> bullets;
+    in property <string> quote;
+    in property <string> code-introduction;
+    in property <string> code;
+    in property <string> source-label;
+    in property <string> summary-heading;
+    in property <string> summary;
+    in property <string> attribution;
+    callback source-activated;
+
+    height: article.preferred-height;
+    article := VerticalLayout {
+        width: parent.width;
+        height: self.preferred-height;
+        alignment: start;
+        spacing: 14px;
+
+        if root.title != "" : Label {
+            text: root.title;
+            color: Palette.bright;
+            font-size: 21px;
+            font-weight: 700;
+        }
+        if root.introduction != "" : Text {
+            text: root.introduction;
+            color: Palette.foreground;
+            font-family: "monospace";
+            font-size: 13px;
+            wrap: word-wrap;
+        }
+        if root.section-heading != "" : Label {
+            text: root.section-heading;
+            color: Palette.bright;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        for bullet in root.bullets : Rectangle {
+            height: max(24px, bullet-text.preferred-height);
+            Rectangle {
+                x: 2px;
+                y: 10px;
+                width: 4px;
+                height: 4px;
+                background: Palette.foreground;
+            }
+            bullet-text := Text {
+                x: 18px;
+                width: max(0px, parent.width - 18px);
+                text: bullet;
+                color: Palette.foreground;
+                font-family: "monospace";
+                font-size: 13px;
+                wrap: word-wrap;
+                vertical-alignment: center;
+            }
+        }
+        if root.quote != "" : Rectangle {
+            height: max(48px, quote-text.preferred-height + 20px);
+            background: Palette.foreground.with-alpha(0.04);
+            Rectangle { x: 0px; y: 0px; width: 2px; height: parent.height; background: Palette.accent; }
+            quote-text := Text {
+                x: 14px;
+                y: 10px;
+                width: max(0px, parent.width - 28px);
+                text: root.quote;
+                color: Palette.muted;
+                font-family: "monospace";
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+        }
+        if root.code-introduction != "" : Label { text: root.code-introduction; }
+        if root.code != "" : Rectangle {
+            height: max(44px, code-text.preferred-height + 20px);
+            background: Palette.inset;
+            code-text := Text {
+                x: 14px;
+                y: 10px;
+                width: max(0px, parent.width - 28px);
+                text: root.code;
+                color: Palette.bright;
+                font-family: "monospace";
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+        }
+        if root.source-label != "" : OmLink {
+            label: root.source-label;
+            activated => { root.source-activated(); }
+        }
+        if root.summary-heading != "" || root.summary != "" || root.attribution != "" : Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+        if root.summary-heading != "" : Label {
+            text: root.summary-heading;
+            color: Palette.bright;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        if root.summary != "" : Text {
+            text: root.summary;
+            color: Palette.foreground;
+            font-family: "monospace";
+            font-size: 13px;
+            wrap: word-wrap;
+        }
+        if root.attribution != "" : Label {
+            text: root.attribution;
+            color: Palette.muted;
         }
     }
 }

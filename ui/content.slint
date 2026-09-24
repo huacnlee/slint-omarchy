@@ -60,8 +60,8 @@ export component OmEmptyState inherits Rectangle {
         height: self.preferred-height;
         alignment: start;
         spacing: 8px;
-        Label { text: root.title; color: Palette.bright; font-weight: 700; }
-        if root.description != "" : Label { text: root.description; color: Palette.muted; }
+        Label { text: root.title; color: Palette.bright; font-weight: 700; wrap: word-wrap; }
+        if root.description != "" : Label { text: root.description; color: Palette.muted; wrap: word-wrap; }
         @children
     }
 }
@@ -82,7 +82,7 @@ export component OmPanel inherits Rectangle {
         height: self.preferred-height;
         alignment: start;
         spacing: root.content-gap;
-        Label { text: root.title; color: Palette.bright; font-size: 14px; font-weight: 600; }
+        Label { text: root.title; color: Palette.bright; font-size: 14px; font-weight: 600; wrap: word-wrap; }
         @children
     }
 }

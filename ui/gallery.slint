@@ -1,6 +1,6 @@
 import { ListView, ScrollView } from "std-widgets.slint";
-import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmCollapsible, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, ActivityItem, OmActivityList, ProjectRow, TreeRow, OmTable, OmTree, OmColorPicker, OmTextView, OmToast, OmSheet, OmSheetTrigger, OmTitleBar } from "omarchy.slint";
-import { OmWorkspaceForm, OmResetDialogForm, OmHorizontalSplit, OmVerticalSplit } from "gallery_examples.slint";
+import { Palette, ChoiceItem, Label, OmAlignedIcon, OmButton, Card, OmLink, OmMenuItem, OmMenu, OmToggle, OmCheckBox, OmSwitch, OmRadioGroup, OmChoice, OmStepButton, OmCalendarModeButton, OmNumberInput, OmSlider, OmRangeSlider, OmDayCell, OmCalendar, OmDatePicker, OmPopover, OmTooltipButton, OmHoverCard, OmArticleRow, OmIconRow, OmBadge, OmAlert, OmKeycap, OmScrollbar, OmHorizontalScrollbar, OmNavRow, OmAccordionItem, OmCollapsible, OmInput, OmTextarea, OmButtonGroup, OmTabs, OmPagination, OmProgress, OmAvatar, OmEmptyState, OmPanel, OmSeparator, TreeRow, OmTree, VirtualTextRow, OmVirtualTextList, OmColorPicker, OmRichText, OmToast, OmSheet, OmSheetTrigger, OmTitleBar } from "omarchy.slint";
+import { ProjectRow, OmProjectTable, OmWorkspaceForm, OmResetDialogForm, OmHorizontalSplit, OmVerticalSplit, OmTextView } from "gallery_examples.slint";
 export { Palette } from "omarchy.slint";
 
 export struct NavItem { name: string, label: string, description: string, category: string, implemented: bool }
@@ -17,7 +17,8 @@ export component Gallery inherits Window {
     background: Palette.background;
     default-font-family: "monospace";
     in property <[NavItem]> pages;
-    in property <[ActivityItem]> activities;
+    in property <[VirtualTextRow]> activities;
+    in property <length> activity-total-height: 0px;
     in property <[ChoiceItem]> workspace-choices;
     in property <[ChoiceItem]> filtered-choices;
     in property <[ProjectRow]> projects;
@@ -568,7 +569,19 @@ export component Gallery inherits Window {
                             }
                             if root.current-page == "menu" : Card {
                                 heading: "Workspace actions";
-                                OmMenu { chosen(label) => { root.menu-result = label; root.status = label; } }
+                                OmMenu {
+                                    items: [
+                                        { value: "new", label: "New workspace", icon-name: "plus", enabled: true, submenu: false },
+                                        { value: "favorite", label: "Favorite workspace", icon-name: "star", enabled: true, submenu: false },
+                                        { value: "export", label: "Export", icon-name: "", enabled: true, submenu: true },
+                                        { value: "unavailable", label: "Unavailable action", icon-name: "", enabled: false, submenu: false },
+                                    ];
+                                    submenu-items: [
+                                        { value: "pdf", label: "Export as PDF", icon-name: "", enabled: true, submenu: false },
+                                        { value: "markdown", label: "Export as Markdown", icon-name: "", enabled: true, submenu: false },
+                                    ];
+                                    chosen(label) => { root.menu-result = label; root.status = label; }
+                                }
                                 Label { text: root.menu-result; color: Palette.muted; }
                                 Label { text: "Arrow keys move through the menu; Return selects and Escape closes."; color: Palette.muted; }
                             }
@@ -757,11 +770,13 @@ export component Gallery inherits Window {
                                     height: root.current-page == "scrollbar" ? 280px : 300px;
                                     border-width: 1px;
                                     border-color: Palette.border;
-                                    activity-list := OmActivityList {
+                                    activity-list := OmVirtualTextList {
                                         x: 1px; y: 1px;
                                         width: parent.width - 2px;
                                         height: parent.height - 2px;
-                                        activities: root.activities;
+                                        rows: root.activities;
+                                        total-height: root.activity-total-height;
+                                        accessible-name: "Activity";
                                     }
                                 }
                                 Label { text: "Scroll through the log or jump to either end. Longer events keep their full description."; color: Palette.muted; wrap: word-wrap; }
@@ -795,7 +810,7 @@ export component Gallery inherits Window {
                                     width: parent.width;
                                     height: 32px + root.projects.length * 34px + 8px;
                                     clip: true;
-                                    OmTable {
+                                    OmProjectTable {
                                         x: root.table-offset;
                                         y: 0px;
                                         width: max(parent.width, 640px);
@@ -844,6 +859,11 @@ export component Gallery inherits Window {
                             }
                             if root.current-page == "text_view" : Card {
                                 heading: "Markdown · Project brief";
+                                OmRichText {
+                                    width: parent.width;
+                                    text: @markdown("**Project brief**\n\nUse [GPUI Omarchy](https://github.com/huacnlee/gpui-omarchy) as a visual reference. The content wraps to the available width.");
+                                    link-activated(link) => { root.open-source(); }
+                                }
                                 OmTextView {
                                     title: "Website refresh";
                                     introduction: "A clearer home for our project documentation. Keep navigation simple and preserve the reading experience.";
@@ -903,7 +923,7 @@ export component Gallery inherits Window {
                             if root.current-page == "separator" : Card {
                                 heading: "Separators";
                                 Label { text: "Section one"; }
-                                OmSeparator { }
+                                OmSeparator { width: parent.width; }
                                 Label { text: "Section two"; }
                                 HorizontalLayout {
                                     spacing: 12px;

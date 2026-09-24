@@ -40,8 +40,8 @@ export component OmTitleBar inherits Rectangle {
             menu-trigger := OmButton { label: "Menu"; chevron: true; width: parent.width; clicked => { application-menu.show(); } }
             application-menu := PopupWindow {
                 x: parent.width - self.width; y: parent.height;
-                // Four 32px actions, one divider, four 2px gaps and 8px of padding.
-                width: 188px; height: 145px;
+                // Theme actions, window commands, Exit, and two dividers.
+                width: 188px; height: 216px;
                 close-policy: close-on-click-outside;
                 forward-focus: application-menu-focus;
                 Rectangle {
@@ -52,6 +52,9 @@ export component OmTitleBar inherits Rectangle {
                         OmButton { label: root.system-theme-label; text-left: true; width: parent.width; selected: root.theme-mode == 0; clicked => { root.theme-requested(0); application-menu.close(); menu-trigger.focus(); } }
                         OmButton { label: root.dark-theme-label; text-left: true; width: parent.width; selected: root.theme-mode == 1; clicked => { root.theme-requested(1); application-menu.close(); menu-trigger.focus(); } }
                         OmButton { label: root.light-theme-label; text-left: true; width: parent.width; selected: root.theme-mode == 2; clicked => { root.theme-requested(2); application-menu.close(); menu-trigger.focus(); } }
+                        Rectangle { height: 1px; background: Palette.border; }
+                        OmButton { label: "Minimize window"; text-left: true; width: parent.width; clicked => { application-menu.close(); root.minimize-requested(); } }
+                        OmButton { label: "Maximize window"; text-left: true; width: parent.width; clicked => { application-menu.close(); root.maximize-requested(); menu-trigger.focus(); } }
                         Rectangle { height: 1px; background: Palette.border; }
                         OmButton { label: "Exit"; text-left: true; width: parent.width; clicked => { application-menu.close(); root.close-requested(); } }
                     }
@@ -65,9 +68,5 @@ export component OmTitleBar inherits Rectangle {
                 }
             }
         }
-        Rectangle { width: 1px; Rectangle { y: (parent.height - 26px) / 2; width: 1px; height: 26px; background: Palette.border; } }
-        OmButton { label: "Minimize window"; icon-name: "minimize"; width: 30px; clicked => { root.minimize-requested(); } }
-        OmButton { label: "Maximize window"; icon-name: "maximize"; width: 30px; clicked => { root.maximize-requested(); } }
-        OmButton { label: "Close window"; icon-name: "close"; width: 30px; clicked => { root.close-requested(); } }
     }
 }

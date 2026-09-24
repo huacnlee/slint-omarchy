@@ -18,24 +18,26 @@ export component OmToast inherits Rectangle {
     callback action;
     changed paused => { root.pause-changed(root.paused); }
     width: 320px;
-    height: root.action-label == "" ? 44px : root.tone == "error" ? 84px : 76px;
+    height: max(root.action-label == "" ? 44px : root.tone == "error" ? 84px : 76px,
+        message-text.y + message-text.height + (root.action-label == "" ? 12px : 48px));
     visible: root.open;
     background: Palette.surface;
     border-width: 1px;
     border-color: root.tone == "error" ? Palette.danger : root.tone == "success" ? Palette.accent : Palette.border;
     TouchArea { changed has-hover => { root.hovered = self.has-hover; } }
     if root.tone != "neutral" : Image {
-        x: 14px; y: 12px; width: 18px; height: 18px;
+        x: 14px; y: message-text.y + 2px; width: 18px; height: 18px;
         source: root.tone == "error" ? @image-url("../assets/icons/triangle-alert.svg") : @image-url("../assets/icons/check.svg");
         colorize: root.tone == "error" ? Palette.danger : Palette.success;
     }
-    Label {
+    message-text := Label {
         x: root.tone == "neutral" ? 14px : 38px;
         y: 10px;
-        width: parent.width - self.x - 74px;
-        height: 22px;
+        width: max(0px, parent.width - self.x - 74px);
+        height: max(22px, self.preferred-height);
         text: root.message;
         color: root.tone == "error" ? Palette.danger : Palette.bright;
+        wrap: word-wrap;
     }
     OmButton {
         x: parent.width - 70px; y: 8px; width: 58px; height: 26px;
@@ -44,7 +46,7 @@ export component OmToast inherits Rectangle {
         clicked => { root.open = false; root.dismissed(); }
     }
     if root.action-label != "" : OmButton {
-        x: 14px; y: root.tone == "error" ? 44px : 40px; height: 26px;
+        x: 14px; y: max(root.tone == "error" ? 44px : 40px, message-text.y + message-text.height + 8px); height: 26px;
         label: root.action-label;
         outline: root.tone == "error";
         focus-changed(has) => { root.action-focused = has; }

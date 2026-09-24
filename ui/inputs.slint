@@ -9,6 +9,8 @@ export component OmInput inherits Rectangle {
     in property <string> accessible-name: "Text input";
     in property <bool> disabled: false;
     in property <bool> read-only: false;
+    in property <bool> invalid: false;
+    in property <bool> cancel-on-escape: false;
     in property <image> leading-icon;
     in property <bool> show-leading-icon: false;
     in property <image> trailing-icon;
@@ -19,6 +21,7 @@ export component OmInput inherits Rectangle {
     private property <length> content-right: 10px + (root.show-trailing-icon ? 26px : 0px) + (root.suffix != "" ? suffix-label.preferred-width + 10px : 0px);
     callback edited(string);
     callback submitted(string);
+    callback cancelled;
     callback focus-changed(bool);
     changed has-focus => { root.focus-changed(root.has-focus); }
     public function focus-editor() { editor.focus(); }
@@ -27,7 +30,7 @@ export component OmInput inherits Rectangle {
     height: 36px;
     background: root.has-focus ? Palette.foreground.with-alpha(0.08) : Palette.foreground.with-alpha(0.04);
     border-width: 1px;
-    border-color: root.has-focus ? Palette.foreground.with-alpha(0.25) : Palette.foreground.with-alpha(0.4);
+    border-color: root.invalid ? Palette.danger : root.has-focus ? Palette.accent : Palette.border;
     opacity: root.disabled ? 0.45 : 1;
     forward-focus: editor;
     accessible-role: text-input;
@@ -40,6 +43,11 @@ export component OmInput inherits Rectangle {
         width: 18px; height: 18px;
         source: root.leading-icon;
         colorize: Palette.muted;
+    }
+    if root.show-leading-icon : TouchArea {
+        x: 0px; y: 0px; width: root.content-left; height: parent.height;
+        enabled: !root.disabled;
+        clicked => { editor.focus(); }
     }
     if root.text == "" && editor.preedit-text == "" : Label {
         x: root.content-left; y: 0px;
@@ -66,6 +74,10 @@ export component OmInput inherits Rectangle {
         selection-background-color: Palette.foreground.with-alpha(0.35);
         edited => { root.edited(self.text); }
         accepted => { root.submitted(self.text); }
+        key-pressed(event) => {
+            if (event.text == Key.Escape && root.cancel-on-escape) { root.cancelled(); return accept; }
+            return reject;
+        }
     }
     suffix-label := Label {
         x: parent.width - (root.show-trailing-icon ? 36px : 10px) - self.width;
@@ -82,6 +94,12 @@ export component OmInput inherits Rectangle {
         width: 18px; height: 18px;
         source: root.trailing-icon;
         colorize: Palette.muted;
+    }
+    if root.suffix != "" || root.show-trailing-icon : TouchArea {
+        x: parent.width - root.content-right; y: 0px;
+        width: root.content-right; height: parent.height;
+        enabled: !root.disabled;
+        clicked => { editor.focus(); }
     }
 }
 

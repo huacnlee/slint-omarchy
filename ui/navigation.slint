@@ -1,6 +1,6 @@
 import { ScrollView } from "std-widgets.slint";
 import { Palette } from "theme.slint";
-import { OmButton } from "base.slint";
+import { Label, OmButton } from "base.slint";
 
 component ChoiceStrip inherits Rectangle {
     in property <[string]> options;
@@ -10,27 +10,40 @@ component ChoiceStrip inherits Rectangle {
     private property <int> cursor: root.selected;
     changed selected => { root.cursor = root.selected; }
     width: 360px;
-    height: root.tab-style ? 36px : 40px;
-    background: root.tab-style ? transparent : Palette.surface;
-    border-width: root.tab-style ? 0px : 1px;
+    height: 40px;
+    background: root.tab-style ? Palette.foreground.with-alpha(0.04) : Palette.surface;
+    border-width: 1px;
     border-color: Palette.border;
     forward-focus: choice-focus;
     choices := HorizontalLayout {
-        padding: root.tab-style ? 0px : 4px;
+        padding: 4px;
         spacing: 4px;
         for option[index] in root.options : Rectangle {
-            width: root.options.length > 0 ? (root.width - (root.tab-style ? 0px : 8px) - max(0, root.options.length - 1) * 4px) / root.options.length : 0px;
-            height: root.tab-style ? 36px : 30px;
-            OmButton {
-                x: 0px; y: 0px; width: parent.width; height: parent.height;
-                label: option;
-                selected: root.selected == index;
-                outline: choice-focus.has-focus && root.cursor == index;
-                clicked => { root.cursor = index; root.selected = index; root.changed(index); choice-focus.focus(); }
+            width: root.options.length > 0 ? (root.width - 8px - max(0, root.options.length - 1) * 4px) / root.options.length : 0px;
+            height: 30px;
+            background: option-touch.pressed ? Palette.foreground.with-alpha(0.22) : root.selected == index ? Palette.foreground.with-alpha(0.18) : (option-touch.has-hover || (choice-focus.has-focus && root.cursor == index)) ? Palette.foreground.with-alpha(0.08) : transparent;
+            border-width: 1px;
+            border-color: (choice-focus.has-focus && root.cursor == index) || (root.tab-style && root.selected == index) ? Palette.accent : transparent;
+            accessible-role: button;
+            accessible-label: option;
+            accessible-action-default => {
+                root.cursor = index;
+                if (root.selected != index) { root.selected = index; root.changed(index); }
+                choice-focus.focus();
             }
-            if root.tab-style && root.selected == index : Rectangle {
-                x: 0px; y: parent.height - 2px; width: parent.width; height: 2px;
-                background: Palette.accent;
+            Label {
+                x: 4px; y: 0px; width: parent.width - 8px; height: parent.height;
+                text: option;
+                color: !root.tab-style || root.selected == index ? Palette.foreground : Palette.muted;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+            option-touch := TouchArea {
+                clicked => {
+                    root.cursor = index;
+                    if (root.selected != index) { root.selected = index; root.changed(index); }
+                    choice-focus.focus();
+                }
             }
         }
     }
@@ -40,8 +53,7 @@ component ChoiceStrip inherits Rectangle {
             if (event.text == Key.LeftArrow && root.options.length > 0) { root.cursor = Math.mod(root.cursor + root.options.length - 1, root.options.length); return accept; }
             if (event.text == Key.RightArrow && root.options.length > 0) { root.cursor = Math.mod(root.cursor + 1, root.options.length); return accept; }
             if ((event.text == Key.Return || event.text == " ") && root.cursor >= 0 && root.cursor < root.options.length) {
-                root.selected = root.cursor;
-                root.changed(root.cursor);
+                if (root.selected != root.cursor) { root.selected = root.cursor; root.changed(root.cursor); }
                 return accept;
             }
             return reject;
@@ -69,7 +81,7 @@ export component OmTabs inherits Rectangle {
     in-out property <int> selected: 0;
     callback changed(int);
     width: 360px;
-    height: 36px;
+    height: 40px;
     forward-focus: strip;
     strip := ChoiceStrip {
         width: parent.width;
@@ -108,7 +120,7 @@ export component OmPagination inherits Rectangle {
     pagination-layout := HorizontalLayout {
         spacing: 4px;
         OmButton { label: "Previous page"; icon-name: "left"; width: 32px; disabled: root.current <= 1; clicked => { root.select-page(root.current - 1); } }
-        if root.total > 1 : OmButton { label: "1"; width: 32px; selected: root.current == 1; clicked => { root.select-page(1); } }
+        OmButton { label: "1"; width: 32px; selected: root.current == 1; clicked => { root.select-page(1); } }
         if root.total <= 5 : HorizontalLayout {
             spacing: 4px;
             for index in max(0, root.total - 2) : OmButton {

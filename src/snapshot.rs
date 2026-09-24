@@ -130,12 +130,17 @@ pub fn save(
             });
         }
         if wait_ms > 0 {
-            std::thread::sleep(std::time::Duration::from_millis(wait_ms.min(10_000)));
-            slint::platform::update_timers_and_animations();
-            window.request_redraw();
-            window.draw_if_needed(|renderer| {
-                renderer.render(&mut pixels, width);
-            });
+            let deadline =
+                std::time::Instant::now() + std::time::Duration::from_millis(wait_ms.min(10_000));
+            while std::time::Instant::now() < deadline {
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                std::thread::sleep(remaining.min(std::time::Duration::from_millis(16)));
+                slint::platform::update_timers_and_animations();
+                window.request_redraw();
+                window.draw_if_needed(|renderer| {
+                    renderer.render(&mut pixels, width);
+                });
+            }
         }
 
         if let Some(parent) = path.parent() {

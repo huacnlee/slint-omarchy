@@ -32,7 +32,7 @@ The [UI architecture](docs/architecture.md) explains the public control boundary
 
 [`examples/reuse.rs`](examples/reuse.rs) is a standalone window that imports the component library. Verify the public Slint API with `cargo check --example reuse`.
 
-The host supplies models and handles callbacks for controls such as `OmTable`, `OmTree`, `OmColorPicker`, `OmToast`, and `OmTitleBar`. The gallery in [`ui/gallery.slint`](ui/gallery.slint) shows those bindings in context.
+The host supplies models and handles callbacks for controls such as `OmTree`, `OmVirtualTextList`, `OmColorPicker`, `OmRichText`, `OmToast`, and `OmTitleBar`. Tables are composed from `OmTable`, `OmTableRow`, and `OmTableCell`; the gallery and standalone example use different column sets. `OmRichText` accepts Slint `styled-text` for inline Markdown and links; the runtime's [document feature limits](docs/architecture.md) are documented separately. The gallery in [`ui/gallery.slint`](ui/gallery.slint) shows those bindings in context.
 
 To open the 1,000-row scrolling preview directly:
 
@@ -60,7 +60,7 @@ The script launches the binaries directly, forces Slint's `winit-femtovg` render
 
 The [idle comparison](docs/performance.md) records three-run `virtual_list` results for Slint 1.18.1 and GPUI, with the raw readings and measurement limits. The list's First event and Last event buttons let you inspect the two ends without a long manual scroll.
 
-The sidebar includes previews for 46 reference entries. Dock and OTP input are deferred because their current implementations are incomplete. Some previews cover fewer states than their GPUI counterparts. Use Up/Down, `j`/`k`, or Home/End while the sidebar has focus. Tab reaches buttons and fields. The frameless title bar supports native window dragging, resizing, close, minimize, and maximize controls. Its zoom buttons adjust the gallery from 50% to 200%, and its application menu can follow the current Omarchy theme or preview Tokyo Night and Flexoki Light. System mode checks for theme changes every two seconds.
+The sidebar includes previews for 46 reference entries. Dock and OTP input are deferred because their current implementations are incomplete. Some previews cover fewer states than their GPUI counterparts. Use Up/Down, `j`/`k`, or Home/End while the sidebar has focus. Tab reaches buttons and fields. The frameless title bar supports native window dragging and resizing; close, minimize, and maximize are available from its Menu. Its zoom buttons adjust the gallery from 50% to 200%, and its application menu can follow the current Omarchy theme or preview Tokyo Night and Flexoki Light. System mode checks for theme changes every two seconds.
 
 The system theme is read from `$HOME/.local/state/omarchy/current/theme/colors.toml`, falling back to the legacy `$HOME/.config/omarchy/current` only if the state entry is absent. Invalid themes fall back as a whole to Tokyo Night. Both ANSI and semantic color formats are accepted.
 
