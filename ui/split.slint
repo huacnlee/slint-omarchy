@@ -1,0 +1,107 @@
+import { Palette } from "theme.slint";
+
+// The caller supplies both panes as children and positions them with the
+// published geometry. The divider owns pointer, keyboard, and a11y behavior.
+export component OmHorizontalSplit inherits Rectangle {
+    in-out property <length> split-size: 220px;
+    in property <length> minimum-first-size: 140px;
+    in property <length> minimum-second-size: 140px;
+    in property <string> divider-label: "Resize panels";
+    out property <length> first-size: root.actual-split-size;
+    out property <length> second-offset: root.actual-split-size + root.divider-size;
+    out property <length> second-size: max(0px, root.width - root.second-offset);
+    private property <length> divider-size: 6px;
+    private property <length> available-size: max(0px, root.width - root.divider-size);
+    private property <length> minimum-size: min(root.minimum-first-size, root.available-size);
+    private property <length> maximum-size: max(root.minimum-size, root.available-size - root.minimum-second-size);
+    private property <length> actual-split-size: max(root.minimum-size, min(root.split-size, root.maximum-size));
+    width: 700px; height: 300px;
+    clip: true;
+    border-width: 1px; border-color: Palette.border;
+
+    @children
+
+    divider := Rectangle {
+        x: root.first-size; width: root.divider-size; height: parent.height;
+        background: transparent;
+        forward-focus: divider-focus;
+        accessible-role: slider;
+        accessible-label: root.divider-label;
+        accessible-value: "" + (root.first-size / 1px) + " px";
+        Rectangle {
+            x: (parent.width - 1px) / 2;
+            width: 1px;
+            height: parent.height;
+            background: divider-touch.has-hover || divider-focus.has-focus ? Palette.accent : Palette.border;
+        }
+        divider-touch := TouchArea {
+            private property <length> start-x;
+            pointer-event(event) => { if (event.kind == PointerEventKind.down) { self.start-x = self.mouse-x; divider-focus.focus(); } }
+            moved => {
+                if (self.pressed) {
+                    root.split-size = max(root.minimum-size, min(root.maximum-size, root.first-size + self.mouse-x - self.start-x));
+                }
+            }
+        }
+        divider-focus := FocusScope {
+            width: 0px;
+            key-pressed(event) => {
+                if (event.text == Key.LeftArrow) { root.split-size = max(root.minimum-size, root.first-size - 10px); return accept; }
+                if (event.text == Key.RightArrow) { root.split-size = min(root.maximum-size, root.first-size + 10px); return accept; }
+                return reject;
+            }
+        }
+    }
+}
+
+export component OmVerticalSplit inherits Rectangle {
+    in-out property <length> split-size: 140px;
+    in property <length> minimum-first-size: 80px;
+    in property <length> minimum-second-size: 60px;
+    in property <string> divider-label: "Resize panels";
+    out property <length> first-size: root.actual-split-size;
+    out property <length> second-offset: root.actual-split-size + root.divider-size;
+    out property <length> second-size: max(0px, root.height - root.second-offset);
+    private property <length> divider-size: 6px;
+    private property <length> available-size: max(0px, root.height - root.divider-size);
+    private property <length> minimum-size: min(root.minimum-first-size, root.available-size);
+    private property <length> maximum-size: max(root.minimum-size, root.available-size - root.minimum-second-size);
+    private property <length> actual-split-size: max(root.minimum-size, min(root.split-size, root.maximum-size));
+    width: 700px; height: 240px;
+    clip: true;
+    border-width: 1px; border-color: Palette.border;
+
+    @children
+
+    divider := Rectangle {
+        y: root.first-size; height: root.divider-size; width: parent.width;
+        background: transparent;
+        forward-focus: divider-focus;
+        accessible-role: slider;
+        accessible-label: root.divider-label;
+        accessible-value: "" + (root.first-size / 1px) + " px";
+        Rectangle {
+            y: (parent.height - 1px) / 2;
+            height: 1px;
+            width: parent.width;
+            background: divider-touch.has-hover || divider-focus.has-focus ? Palette.accent : Palette.border;
+        }
+        divider-touch := TouchArea {
+            private property <length> start-y;
+            pointer-event(event) => { if (event.kind == PointerEventKind.down) { self.start-y = self.mouse-y; divider-focus.focus(); } }
+            moved => {
+                if (self.pressed) {
+                    root.split-size = max(root.minimum-size, min(root.maximum-size, root.first-size + self.mouse-y - self.start-y));
+                }
+            }
+        }
+        divider-focus := FocusScope {
+            width: 0px;
+            key-pressed(event) => {
+                if (event.text == Key.UpArrow) { root.split-size = max(root.minimum-size, root.first-size - 10px); return accept; }
+                if (event.text == Key.DownArrow) { root.split-size = min(root.maximum-size, root.first-size + 10px); return accept; }
+                return reject;
+            }
+        }
+    }
+}

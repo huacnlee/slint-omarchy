@@ -1,0 +1,168 @@
+import { Palette } from "theme.slint";
+import { Label, OmAlignedIcon } from "base.slint";
+
+export component OmArticleRow inherits Rectangle {
+    in property <string> title;
+    in property <string> status;
+    in property <color> status-color: Palette.muted;
+    in property <length> status-width: 230px;
+    height: 36px;
+    Label { x: 0px; y: 0px; width: max(0px, parent.width - status-label.width - 8px); height: parent.height - 1px; text: root.title; }
+    status-label := Label { x: parent.width - self.width; y: 0px; width: min(root.status-width, parent.width / 2); height: parent.height - 1px; text: root.status; color: root.status-color; horizontal-alignment: right; }
+    Rectangle { y: parent.height - 1px; width: parent.width; height: 1px; background: Palette.border; }
+}
+
+export component OmIconRow inherits Rectangle {
+    in property <image> glyph;
+    in property <string> label;
+    in property <color> icon-tone: Palette.foreground;
+    width: 320px;
+    height: 28px;
+    OmAlignedIcon { x: 0px; y: (parent.height - self.height) / 2; glyph: root.glyph; tone: root.icon-tone; }
+    Label { x: 26px; y: 0px; width: parent.width - 26px; height: parent.height; text: root.label; }
+}
+
+export component OmBadge inherits Rectangle {
+    in property <string> label;
+    in property <color> tone: Palette.muted;
+    height: 22px;
+    width: badge-text.preferred-width + 14px;
+    border-width: 1px;
+    border-color: tone;
+    badge-text := Label {
+        x: 7px; width: parent.width - 14px; height: parent.height;
+        text: root.label; color: root.tone; font-size: 11px;
+        horizontal-alignment: center;
+    }
+}
+
+export component OmAlert inherits Rectangle {
+    in property <string> message;
+    in property <bool> success: false;
+    in property <bool> neutral: false;
+    in property <color> tone: Palette.muted;
+    in property <image> icon: root.neutral ? @image-url("../assets/icons/minus.svg") : root.success ? @image-url("../assets/icons/check.svg") : @image-url("../assets/icons/triangle-alert.svg");
+    height: max(38px, message-text.preferred-height + 20px);
+    background: tone.with-alpha(0.06);
+    border-width: 1px;
+    border-color: tone.with-alpha(0.35);
+    Image { x: 10px; y: (parent.height - self.height) / 2; width: 14px; height: 14px; source: root.icon; colorize: root.tone; }
+    message-text := Label {
+        x: 34px;
+        y: 10px;
+        width: max(0px, parent.width - 44px);
+        height: max(18px, self.preferred-height);
+        text: root.message;
+        color: root.tone;
+        horizontal-alignment: left;
+        wrap: word-wrap;
+    }
+}
+
+export component OmKeycap inherits Rectangle {
+    in property <string> key;
+    height: 24px;
+    width: key-text.preferred-width + 12px;
+    background: Palette.inset;
+    border-width: 1px;
+    border-color: Palette.border;
+    key-text := Label {
+        x: 6px; width: parent.width - 12px; height: parent.height;
+        text: root.key; font-size: 11px; font-weight: 600;
+        horizontal-alignment: center;
+    }
+}
+
+export component OmScrollbar inherits Rectangle {
+    in-out property <length> viewport-y;
+    in property <length> content-height;
+    in property <length> page-height;
+    private property <length> maximum: max(0px, content-height - page-height);
+    width: 8px;
+    visible: maximum > 0px;
+    background: Palette.foreground.with-alpha(0.04);
+    thumb := Rectangle {
+        width: 6px;
+        x: 1px;
+        height: min(root.height, max(24px, root.height * root.page-height / max(root.content-height, 1px)));
+        y: root.maximum > 0px ? -root.viewport-y * (root.height - self.height) / root.maximum : 0px;
+        background: handle.pressed && handle.dragging ? Palette.foreground.with-alpha(0.7) :
+            handle.has-hover && handle.mouse-y >= self.y && handle.mouse-y <= self.y + self.height ?
+            Palette.foreground.with-alpha(0.55) : Palette.foreground.with-alpha(0.35);
+    }
+    handle := TouchArea {
+        private property <length> start-y;
+        private property <length> start-offset;
+        private property <bool> dragging;
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                self.start-y = self.mouse-y;
+                self.start-offset = root.viewport-y;
+                self.dragging = self.mouse-y >= thumb.y && self.mouse-y <= thumb.y + thumb.height;
+                if (!self.dragging) {
+                    root.viewport-y = max(-root.maximum, min(0px, root.viewport-y +
+                        (self.mouse-y < thumb.y ? root.page-height : -root.page-height)));
+                }
+            }
+            if (event.kind == PointerEventKind.up) {
+                self.dragging = false;
+            }
+        }
+        moved => {
+            if (self.pressed && self.dragging && root.maximum > 0px) {
+                root.viewport-y = max(-root.maximum, min(0px, self.start-offset -
+                    (self.mouse-y - self.start-y) * root.maximum / max(root.height - thumb.height, 1px)));
+            }
+        }
+        scroll-event(event) => {
+            root.viewport-y = max(-root.maximum, min(0px, root.viewport-y + event.delta-y));
+            return accept;
+        }
+    }
+}
+
+export component OmHorizontalScrollbar inherits Rectangle {
+    in-out property <length> viewport-x;
+    in property <length> content-width;
+    in property <length> page-width;
+    private property <length> maximum: max(0px, content-width - page-width);
+    height: 8px;
+    visible: maximum > 0px;
+    background: Palette.foreground.with-alpha(0.04);
+    thumb := Rectangle {
+        x: root.maximum > 0px ? -root.viewport-x * (root.width - self.width) / root.maximum : 0px;
+        y: 1px;
+        width: min(root.width, max(24px, root.width * root.page-width / max(root.content-width, 1px)));
+        height: 6px;
+        background: handle.pressed && handle.dragging ? Palette.foreground.with-alpha(0.7) :
+            handle.has-hover && handle.mouse-x >= self.x && handle.mouse-x <= self.x + self.width ?
+            Palette.foreground.with-alpha(0.55) : Palette.foreground.with-alpha(0.35);
+    }
+    handle := TouchArea {
+        private property <length> start-x;
+        private property <length> start-offset;
+        private property <bool> dragging;
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                self.start-x = self.mouse-x;
+                self.start-offset = root.viewport-x;
+                self.dragging = self.mouse-x >= thumb.x && self.mouse-x <= thumb.x + thumb.width;
+                if (!self.dragging) {
+                    root.viewport-x = max(-root.maximum, min(0px, root.viewport-x +
+                        (self.mouse-x < thumb.x ? root.page-width : -root.page-width)));
+                }
+            }
+            if (event.kind == PointerEventKind.up) { self.dragging = false; }
+        }
+        moved => {
+            if (self.pressed && self.dragging && root.maximum > 0px) {
+                root.viewport-x = max(-root.maximum, min(0px, self.start-offset -
+                    (self.mouse-x - self.start-x) * root.maximum / max(root.width - thumb.width, 1px)));
+            }
+        }
+        scroll-event(event) => {
+            root.viewport-x = max(-root.maximum, min(0px, root.viewport-x + event.delta-x));
+            return accept;
+        }
+    }
+}

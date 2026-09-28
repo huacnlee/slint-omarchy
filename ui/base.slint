@@ -1,0 +1,95 @@
+import { Palette } from "theme.slint";
+
+export component Label inherits Text {
+    color: Palette.foreground;
+    font-size: 13px;
+    font-family: "monospace";
+    vertical-alignment: center;
+}
+
+export component OmAlignedIcon inherits Rectangle {
+    in property <image> glyph;
+    in property <color> tone: Palette.muted;
+    in property <bool> show: true;
+    width: 16px;
+    height: 16px;
+    if root.show : Image { x: 0px; y: 0px; width: 16px; height: 16px; source: root.glyph; colorize: root.tone; }
+}
+
+export component OmButton inherits Rectangle {
+    in property <string> label;
+    in property <bool> chevron: false;
+    in property <string> trailing-icon: "";
+    in property <bool> text-left: false;
+    in property <string> icon-name: "";
+    in property <string> leading-icon: "";
+    in property <bool> show-swatch: false;
+    in property <color> swatch-color: transparent;
+    in property <bool> primary: false;
+    in property <bool> danger: false;
+    in property <bool> outline: false;
+    in property <bool> selected: false;
+    in property <bool> disabled: false;
+    in property <bool> trap-tab: false;
+    out property <bool> has-focus: focus-scope.has-focus;
+    callback clicked;
+    callback tabbed(bool);
+    callback focus-changed(bool);
+    height: 32px;
+    width: max(68px, caption.preferred-width + (root.show-swatch ? 44px : root.chevron || root.trailing-icon != "" || root.leading-icon != "" ? 40px : 24px));
+    background: disabled ? transparent : touch.pressed ? Palette.foreground.with-alpha(0.22) : touch.has-hover || has-focus ? Palette.foreground.with-alpha(0.08) : selected ? Palette.foreground.with-alpha(0.18) : transparent;
+    border-width: 1px;
+    border-color: primary ? Palette.accent : danger ? Palette.danger : touch.has-hover || has-focus ? Palette.foreground.with-alpha(0.4) : outline ? Palette.border : transparent;
+    opacity: disabled ? 0.45 : 1;
+    forward-focus: focus-scope;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: !root.disabled;
+    accessible-action-default => { if (!root.disabled) { root.clicked(); } }
+    caption := Label {
+        text: root.icon-name == "" ? root.label : "";
+        horizontal-alignment: root.text-left ? left : center;
+        color: root.danger ? Palette.danger : root.primary ? Palette.accent : Palette.foreground;
+        x: root.text-left ? (root.leading-icon == "" ? 10px : 34px) : root.leading-icon != "" ? (parent.width - (self.preferred-width + 24px)) / 2 + 24px : root.show-swatch || root.chevron || root.trailing-icon != "" ? (parent.width - (self.preferred-width + 24px)) / 2 : (parent.width - self.preferred-width) / 2;
+        width: root.text-left ? parent.width - (root.show-swatch || root.chevron || root.trailing-icon != "" ? 36px : 20px) - (root.leading-icon == "" ? 0px : 24px) : self.preferred-width;
+        height: parent.height;
+    }
+    if root.chevron || root.trailing-icon != "" : Image { x: root.text-left ? parent.width - 26px : caption.x + caption.width + 8px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.trailing-icon == "calendar" ? @image-url("../assets/icons/calendar.svg") : @image-url("../assets/icons/chevron-down.svg"); colorize: Palette.muted; }
+    if root.show-swatch : Rectangle { x: root.text-left ? parent.width - 26px : caption.x + caption.width + 8px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; background: root.swatch-color; border-width: 1px; border-color: Palette.border; }
+    if root.icon-name != "" : Image { x: (parent.width - 16px) / 2; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.icon-name == "left" ? @image-url("../assets/icons/chevron-left.svg") : root.icon-name == "right" ? @image-url("../assets/icons/chevron-right.svg") : root.icon-name == "minimize" ? @image-url("../assets/icons/minus.svg") : root.icon-name == "maximize" ? @image-url("../assets/icons/square.svg") : root.icon-name == "plus" ? @image-url("../assets/icons/plus.svg") : root.icon-name == "ellipsis" ? @image-url("../assets/icons/ellipsis.svg") : @image-url("../assets/icons/x.svg"); colorize: root.disabled ? Palette.muted : Palette.foreground; }
+    if root.leading-icon != "" : Image { x: root.text-left ? 10px : caption.x - 24px; y: (parent.height - 16px) / 2; width: 16px; height: 16px; source: root.leading-icon == "down" ? @image-url("../assets/icons/chevron-down.svg") : root.leading-icon == "right" ? @image-url("../assets/icons/chevron-right.svg") : root.leading-icon == "plus" ? @image-url("../assets/icons/plus.svg") : @image-url("../assets/icons/check.svg"); colorize: Palette.foreground; }
+    touch := TouchArea {
+        clicked => { if (!root.disabled) { root.clicked(); } }
+    }
+    focus-scope := FocusScope {
+        width: 0px;
+        enabled: !root.disabled;
+        focus-changed-event => { root.focus-changed(self.has-focus); }
+        key-pressed(event) => {
+            if (event.text == Key.Tab && root.trap-tab) { root.tabbed(event.modifiers.shift); return accept; }
+            if (event.text == " " || event.text == "\n") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+}
+
+export component Card inherits Rectangle {
+    in property <string> heading;
+    out property <length> content-width: layout.width;
+    height: layout.preferred-height + 36px;
+    background: Palette.surface;
+    border-width: 1px;
+    border-color: Palette.border;
+    layout := VerticalLayout {
+        x: 18px;
+        y: 16px;
+        width: parent.width - 36px;
+        height: self.preferred-height;
+        spacing: 14px;
+        Label { text: root.heading; color: Palette.bright; font-size: 15px; font-weight: 600; }
+        @children
+    }
+}

@@ -22,25 +22,28 @@ impl Platform for SnapshotPlatform {
     }
 }
 
-pub fn install() {
+pub fn install(size: (u32, u32)) {
     slint::platform::set_platform(Box::new(SnapshotPlatform))
         .expect("set snapshot platform before creating the gallery");
-    WINDOW.with(|window| window.set_size(PhysicalSize::new(1060, 760)));
+    WINDOW.with(|window| window.set_size(PhysicalSize::new(size.0, size.1)));
 }
 
 pub fn save(
     app: &Gallery,
     path: &Path,
     clicks: &[(f32, f32)],
+    hovers: &[(f32, f32)],
     drags: &[(f32, f32, f32, f32)],
     typed: Option<&str>,
     keys: &[String],
     wait_ms: u64,
+    size: (u32, u32),
 ) {
     app.show().expect("show gallery in software window");
     WINDOW.with(|window| {
-        let width = 1060;
-        let height = 760;
+        window.set_size(PhysicalSize::new(size.0, size.1));
+        let width = size.0 as usize;
+        let height = size.1 as usize;
         let mut pixels = vec![Rgb8Pixel::default(); width * height];
         window.request_redraw();
         window.draw_if_needed(|renderer| {
@@ -55,6 +58,15 @@ pub fn save(
             window.dispatch_event(WindowEvent::PointerReleased {
                 position,
                 button: PointerEventButton::Left,
+            });
+            window.request_redraw();
+            window.draw_if_needed(|renderer| {
+                renderer.render(&mut pixels, width);
+            });
+        }
+        for &(x, y) in hovers {
+            window.dispatch_event(WindowEvent::PointerMoved {
+                position: LogicalPosition { x, y },
             });
             window.request_redraw();
             window.draw_if_needed(|renderer| {
@@ -118,12 +130,17 @@ pub fn save(
             });
         }
         if wait_ms > 0 {
-            std::thread::sleep(std::time::Duration::from_millis(wait_ms.min(10_000)));
-            slint::platform::update_timers_and_animations();
-            window.request_redraw();
-            window.draw_if_needed(|renderer| {
-                renderer.render(&mut pixels, width);
-            });
+            let deadline =
+                std::time::Instant::now() + std::time::Duration::from_millis(wait_ms.min(10_000));
+            while std::time::Instant::now() < deadline {
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                std::thread::sleep(remaining.min(std::time::Duration::from_millis(16)));
+                slint::platform::update_timers_and_animations();
+                window.request_redraw();
+                window.draw_if_needed(|renderer| {
+                    renderer.render(&mut pixels, width);
+                });
+            }
         }
 
         if let Some(parent) = path.parent() {

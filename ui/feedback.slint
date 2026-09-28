@@ -1,0 +1,111 @@
+import { Palette } from "theme.slint";
+import { Label, OmButton } from "base.slint";
+
+// The caller owns timeout and stacking. A paused notification should not be
+// dismissed by the caller's timer while the pointer or an action has focus.
+export component OmToast inherits Rectangle {
+    in-out property <bool> open: false;
+    in property <string> message;
+    in property <string> action-label: "";
+    in property <string> tone: "success";
+    in property <string> close-label: "Close notification";
+    private property <bool> hovered: false;
+    private property <bool> close-focused: false;
+    private property <bool> action-focused: false;
+    out property <bool> paused: root.open && (root.hovered || root.close-focused || root.action-focused);
+    callback pause-changed(bool);
+    callback dismissed;
+    callback action;
+    changed paused => { root.pause-changed(root.paused); }
+    width: 320px;
+    height: max(root.action-label == "" ? 44px : root.tone == "error" ? 84px : 76px,
+        message-text.y + message-text.height + (root.action-label == "" ? 12px : 48px));
+    visible: root.open;
+    background: Palette.surface;
+    border-width: 1px;
+    border-color: root.tone == "error" ? Palette.danger : root.tone == "success" ? Palette.accent : Palette.border;
+    TouchArea { changed has-hover => { root.hovered = self.has-hover; } }
+    if root.tone != "neutral" : Image {
+        x: 14px; y: message-text.y + 2px; width: 18px; height: 18px;
+        source: root.tone == "error" ? @image-url("../assets/icons/triangle-alert.svg") : @image-url("../assets/icons/check.svg");
+        colorize: root.tone == "error" ? Palette.danger : Palette.success;
+    }
+    message-text := Label {
+        x: root.tone == "neutral" ? 14px : 38px;
+        y: 10px;
+        width: max(0px, parent.width - self.x - 74px);
+        height: max(22px, self.preferred-height);
+        text: root.message;
+        color: root.tone == "error" ? Palette.danger : Palette.bright;
+        wrap: word-wrap;
+    }
+    OmButton {
+        x: parent.width - 70px; y: 8px; width: 58px; height: 26px;
+        label: root.close-label; icon-name: "close";
+        focus-changed(has) => { root.close-focused = has; }
+        clicked => { root.open = false; root.dismissed(); }
+    }
+    if root.action-label != "" : OmButton {
+        x: 14px; y: max(root.tone == "error" ? 44px : 40px, message-text.y + message-text.height + 8px); height: 26px;
+        label: root.action-label;
+        outline: root.tone == "error";
+        focus-changed(has) => { root.action-focused = has; }
+        clicked => { root.action(); }
+    }
+}
+
+// Mount above the application content at full window size. The children are
+// placed in the body between the header separator and the footer action.
+export component OmSheet inherits Rectangle {
+    in-out property <bool> open: false;
+    in property <string> title;
+    in property <string> description: "";
+    in property <string> close-label: "Close";
+    in property <length> panel-width: 360px;
+    callback closed;
+    callback close;
+    close => { root.open = false; root.closed(); }
+    visible: root.open;
+    background: #00000088;
+    forward-focus: sheet-focus;
+    changed open => { if (root.open) { sheet-focus.focus(); } }
+    TouchArea { clicked => { root.close(); } }
+    Rectangle {
+        x: parent.width - self.width;
+        width: min(root.panel-width, parent.width);
+        height: parent.height;
+        background: Palette.surface;
+        border-width: 1px;
+        border-color: Palette.border;
+        TouchArea {}
+        VerticalLayout {
+            padding: 24px;
+            spacing: 16px;
+            Label { text: root.title; color: Palette.bright; font-size: 18px; font-weight: 700; }
+            if root.description != "" : Label { text: root.description; color: Palette.muted; }
+            Rectangle { height: 1px; background: Palette.border; }
+            @children
+            Rectangle { vertical-stretch: 1; }
+            OmButton { label: root.close-label; outline: true; clicked => { root.close(); } }
+        }
+    }
+    sheet-focus := FocusScope {
+        width: 0px;
+        key-pressed(event) => {
+            if (root.open && event.text == Key.Escape) { root.close(); return accept; }
+            return reject;
+        }
+    }
+}
+
+// Bind this trigger and an OmSheet to the same open property. Closing the
+// sheet returns keyboard focus to the control that opened it.
+export component OmSheetTrigger inherits OmButton {
+    in-out property <bool> open: false;
+    private property <bool> has-opened: false;
+    clicked => { root.open = true; }
+    changed open => {
+        if (root.open) { root.has-opened = true; }
+        else if (root.has-opened) { root.focus(); }
+    }
+}

@@ -1,0 +1,29 @@
+import { Palette } from "theme.slint";
+
+// Render caller-owned styled text without owning document structure or link
+// navigation. Callers can provide @markdown(...) or a StyledText parsed in Rust.
+// Slint 1.18 supports inline formatting, links, and lists here; document-level
+// features such as headings, code blocks, and general HTML need composition.
+export component OmRichText inherits Rectangle {
+    in property <styled-text> text;
+    in property <color> text-color: Palette.foreground;
+    in property <color> link-color: Palette.accent;
+    in property <string> font-family: "monospace";
+    in property <length> font-size: 13px;
+    callback link-activated(string);
+
+    width: 400px;
+    height: body.preferred-height;
+    body := StyledText {
+        width: parent.width;
+        height: self.preferred-height;
+        text: root.text;
+        default-color: root.text-color;
+        link-color: root.link-color;
+        default-font-family: root.font-family;
+        default-font-size: root.font-size;
+        horizontal-alignment: left;
+        vertical-alignment: top;
+        link-clicked(link) => { root.link-activated(link); }
+    }
+}

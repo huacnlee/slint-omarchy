@@ -1,0 +1,81 @@
+import { Palette } from "theme.slint";
+
+// A table owns its boundary and the vertical row stack. Callers compose the
+// columns and cells, so table styling does not depend on one application's data.
+export component OmTable inherits Rectangle {
+    in property <string> accessible-name;
+    width: 560px;
+    height: rows.preferred-height + 2px;
+    background: transparent;
+    border-width: 1px;
+    border-color: Palette.border;
+    accessible-role: table;
+    accessible-label: root.accessible-name;
+
+    rows := VerticalLayout {
+        x: 1px; y: 1px;
+        width: parent.width - 2px;
+        height: self.preferred-height;
+        spacing: 0px;
+        @children
+    }
+}
+
+export component OmTableRow inherits Rectangle {
+    in property <bool> header: false;
+    in property <bool> selected: false;
+    in property <bool> disabled: false;
+    in property <string> accessible-name;
+    in property <int> row-index: 0;
+    callback activated;
+
+    height: root.header ? 32px : 34px;
+    background: root.header ? Palette.foreground.with-alpha(0.08) : root.selected ? Palette.foreground.with-alpha(0.18) : !root.disabled && (row-touch.has-hover || row-focus.has-focus) ? Palette.foreground.with-alpha(0.08) : transparent;
+    border-width: 1px;
+    border-color: !root.header && row-focus.has-focus ? Palette.accent : transparent;
+    opacity: root.disabled ? 0.45 : 1;
+    accessible-role: list-item;
+    accessible-label: root.accessible-name;
+    accessible-item-index: root.row-index;
+    accessible-item-selectable: !root.header && !root.disabled;
+    accessible-item-selected: root.selected;
+    accessible-enabled: !root.disabled;
+    accessible-action-default => { if (!root.header && !root.disabled) { root.activated(); } }
+    forward-focus: row-focus;
+
+    if !root.header : Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Palette.foreground.with-alpha(0.12);
+    }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 8px;
+        @children
+    }
+    row-touch := TouchArea {
+        enabled: !root.header && !root.disabled;
+        clicked => { root.activated(); row-focus.focus(); }
+    }
+    row-focus := FocusScope {
+        enabled: !root.header && !root.disabled;
+        width: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") { root.activated(); return accept; }
+            return reject;
+        }
+    }
+}
+
+// A cell supplies consistent insets and can contain text, icons, or controls.
+export component OmTableCell inherits Rectangle {
+    width: 100px;
+    height: 32px;
+    background: transparent;
+    HorizontalLayout {
+        padding-left: 4px;
+        padding-right: 4px;
+        @children
+    }
+}
